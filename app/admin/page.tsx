@@ -92,8 +92,9 @@ export default function AdminPage() {
           <ItemForm />
         </div>
         <p className="mt-4 text-[12px] text-fg-faint">
-          Note: items are stored in server memory (mock mode) and reset on
-          server restart until the database is connected.
+          Items persist to Neon Postgres when DATABASE_URL is set; otherwise
+          they use the in-memory mock and reset on server restart. Image uploads
+          require Cloudinary env vars.
         </p>
       </div>
     </div>

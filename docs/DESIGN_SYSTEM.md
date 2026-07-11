@@ -135,6 +135,8 @@ Large **portrait 3:4** image, `rounded-6px`, hairline ring. Below image, left-al
 ### 2.6 Forms (`components/form.tsx`)
 Inputs = `.glass` fill, hairline ring, `rounded-xl`, focus ring `fg-muted`. Labels are small `.tracked`-ish muted caps. Used by admin item form, newsletter (glass pill wrapper), search.
 
+**Image upload (`components/ItemForm.tsx`)** — the admin item form no longer takes raw image URLs. A native `<input type="file" multiple>` (styled `file:` pill — glass border, `rounded-[4px]`) uploads directly to Cloudinary via a signed request (`POST /api/upload` returns the signature; the browser posts the file to Cloudinary). Returned `secure_url`s render as a 3–4 col grid of square thumbnails (`rounded-[4px]`) with a hover ✕ remove button. Uploads are disabled when Cloudinary env vars are absent.
+
 ### 2.7 Item detail (`app/items/[id]/page.tsx`)
 `.veil` section, 55/45 two-column (image gallery left, info right; stacked on mobile). Info: category eyebrow → serif `text-h2` title → 26px IDR price + condition chip → muted description → spec list (tracked labels) → cream WhatsApp pill + glass wishlist button → seller block (Akbar). Product JSON-LD retained.
 

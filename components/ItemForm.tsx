@@ -17,16 +17,68 @@ const emptyForm = {
   material: "",
 };
 
+interface CloudinarySignature {
+  cloudName: string;
+  apiKey: string;
+  timestamp: number;
+  folder: string;
+  signature: string;
+}
+
 export function ItemForm() {
   const router = useRouter();
   const [form, setForm] = useState(emptyForm);
-  const [imageUrls, setImageUrls] = useState([""]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   function set(name: keyof typeof emptyForm, value: string) {
     setForm((prev) => ({ ...prev, [name]: value }));
+  }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files?.length) return;
+    setIsUploading(true);
+    setUploadError("");
+
+    try {
+      const sigRes = await fetch("/api/upload", { method: "POST" });
+      if (!sigRes.ok) {
+        const data = await sigRes.json().catch(() => null);
+        throw new Error(data?.error ?? "Upload not available");
+      }
+      const sig = (await sigRes.json()) as CloudinarySignature;
+
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        const body = new FormData();
+        body.append("file", file);
+        body.append("api_key", sig.apiKey);
+        body.append("timestamp", String(sig.timestamp));
+        body.append("folder", sig.folder);
+        body.append("signature", sig.signature);
+
+        const res = await fetch(
+          `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
+          { method: "POST", body },
+        );
+        if (!res.ok) throw new Error("Cloudinary upload failed");
+        const data = (await res.json()) as { secure_url: string };
+        uploaded.push(data.secure_url);
+      }
+      setImageUrls((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      setUploadError(
+        err instanceof Error ? err.message : "Failed to upload image",
+      );
+    } finally {
+      setIsUploading(false);
+      e.target.value = "";
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -52,7 +104,7 @@ export function ItemForm() {
       const data = await res.json();
       setSuccess(`Item #${data.itemId} created successfully!`);
       setForm(emptyForm);
-      setImageUrls([""]);
+      setImageUrls([]);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -167,29 +219,49 @@ export function ItemForm() {
       </div>
 
       <div>
-        <Label>Image URLs (Cloudinary or any https image)</Label>
-        <div className="space-y-2">
-          {imageUrls.map((url, index) => (
-            <TextInput
-              key={index}
-              type="url"
-              value={url}
-              onChange={(e) =>
-                setImageUrls((prev) =>
-                  prev.map((v, i) => (i === index ? e.target.value : v)),
-                )
-              }
-              placeholder={`Image URL ${index + 1}`}
-            />
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => setImageUrls((prev) => [...prev, ""])}
-          className="mt-2 text-[13px] text-fg-muted cursor-pointer transition-colors duration-200 hover:text-fg"
-        >
-          + Add another image
-        </button>
+        <Label htmlFor="images">Images</Label>
+        {imageUrls.length > 0 && (
+          <div className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {imageUrls.map((url, index) => (
+              <div
+                key={url}
+                className="group relative aspect-square overflow-hidden rounded-[4px]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
+                  alt={`Upload ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImageUrls((prev) => prev.filter((_, i) => i !== index))
+                  }
+                  className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-[11px] text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                  aria-label={`Remove image ${index + 1}`}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <input
+          id="images"
+          type="file"
+          accept="image/*"
+          multiple
+          disabled={isUploading}
+          onChange={handleUpload}
+          className="block w-full text-[13px] text-fg-muted file:mr-3 file:cursor-pointer file:rounded-[4px] file:border file:border-white/15 file:bg-white/5 file:px-3 file:py-1.5 file:text-fg hover:file:bg-white/10"
+        />
+        {isUploading && (
+          <p className="mt-2 text-[12px] text-fg-faint">Uploading…</p>
+        )}
+        {uploadError && (
+          <p className="mt-2 text-[12px] text-aurora-rose">{uploadError}</p>
+        )}
       </div>
 
       <Button type="submit" disabled={isLoading} className="w-full">
