@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Base — dark aurora stage (matches jackwatkins.co/works) */
+  --color-void: #010008;
+  --color-ink: #050110;
+  --color-cream: #f6f3f0;
+
+  /* Text tints (warm off-white on dark) */
+  --color-fg: rgba(246, 243, 240, 0.88);
+  --color-fg-muted: rgba(246, 243, 240, 0.55);
+  --color-fg-faint: rgba(246, 243, 240, 0.38);
+
+  /* Glass surfaces */
+  --color-glass: rgba(246, 243, 240, 0.06);
+  --color-glass-strong: rgba(246, 243, 240, 0.1);
+  --color-hairline: rgba(246, 243, 240, 0.14);
+
+  /* Aurora accents */
+  --color-aurora-blue: #2b2fe0;
+  --color-aurora-violet: #7c3aed;
+  --color-aurora-magenta: #c026d3;
+  --color-aurora-rose: #d6236a;
+  --color-aurora-crimson: #7a0b2e;
+
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-sans: var(--font-inter), "system-ui", sans-serif;
+
+  --text-hero: clamp(48px, 9vw, 104px);
+  --text-hero--line-height: 1.02;
+  --text-h2: clamp(32px, 4.5vw, 56px);
+  --text-h2--line-height: 1.1;
+  --text-h3: clamp(24px, 2.6vw, 34px);
+  --text-h3--line-height: 1.2;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-drift-a: drift-a 26s ease-in-out infinite;
+  --animate-drift-b: drift-b 32s ease-in-out infinite;
+  --animate-drift-c: drift-c 22s ease-in-out infinite;
+  --animate-rise: rise 0.9s var(--ease-out-soft) both;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(6%, 8%, 0) scale(1.15); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+  50% { transform: translate3d(-8%, -6%, 0) scale(0.9); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(5%, -9%, 0) scale(1.2); }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-void);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: transparent;
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Rounded stage rim: aurora peeks around a rounded dark panel */
+.stage {
+  position: relative;
+  border-radius: 28px;
+  overflow: clip;
+  min-height: calc(100vh - 20px);
+  isolation: isolate;
+}
+
+/* Sections stay transparent so the single fixed aurora is the page background
+   throughout the scroll (matches reference — background stays put). Kept as a
+   hook in case a section ever needs a local scrim. */
+.veil {
+  background: transparent;
+}
+
+.glass {
+  background: var(--color-glass);
+  border: 1px solid var(--color-hairline);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.tracked {
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="drift"], .animate-rise { animation: none !important; }
+}
+
+::selection {
+  background: var(--color-aurora-violet);
+  color: #fff;
+}
+
+input[type="search"]::-webkit-search-cancel-button { display: none; }

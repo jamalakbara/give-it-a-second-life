@@ -1,0 +1,758 @@
+# Tech Setup Guide: Neon + Next.js + Clerk
+
+**Stack:**
+- Next.js 16.2.10 LTS
+- Neon (PostgreSQL)
+- Clerk (Authentication for Phase 2)
+- Cloudinary (Image storage)
+- Vercel (Hosting)
+- TailwindCSS (Styling)
+
+---
+
+## Part 1: Local Environment Setup
+
+### 1.1 Prerequisites
+```bash
+# Check Node version (need 18+)
+node --version
+
+# Check npm version
+npm --version
+```
+
+### 1.2 Create Next.js Project
+```bash
+# Create new Next.js project
+npx create-next-app@latest selling-preloved --typescript --tailwind
+
+# Navigate to project
+cd selling-preloved
+
+# Choose options:
+# ✅ TypeScript: Yes
+# ✅ ESLint: Yes
+# ✅ Tailwind CSS: Yes
+# ✅ App Router: Yes (default)
+# ✅ Src/ directory: No
+# ✅ Import alias: Yes (@/* for imports)
+```
+
+### 1.3 Install Dependencies
+```bash
+npm install
+
+# Neon client
+npm install @neondatabase/serverless
+
+# Image optimization
+npm install next-image-export-optimizer
+
+# Environment management
+npm install dotenv
+
+# Optional: Database migrations (Phase 2)
+# npm install drizzle-orm drizzle-kit
+```
+
+---
+
+## Part 2: Neon Setup
+
+### 2.1 Create Neon Account & Database
+1. Go to [neon.tech](https://neon.tech)
+2. Sign up (free tier)
+3. Create new project: `selling-preloved`
+4. Select region closest to your users (e.g., India: Singapore)
+5. Note your **Connection String** (looks like: `postgresql://user:password@...`)
+
+### 2.2 Environment Variables
+Create `.env.local` in root:
+```env
+# Neon Database
+DATABASE_URL=postgresql://user:password@ep-xxxxx.neon.tech/selling-preloved?sslmode=require
+
+# Admin Panel (MVP only - change this!)
+ADMIN_PASSWORD=your-secret-password-here
+
+# Cloudinary
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
+
+# Clerk (Phase 2 only - fill in when adding multi-seller)
+# NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_key_here
+# CLERK_SECRET_KEY=your_secret_here
+
+# WhatsApp Business API (Phase 2)
+# WHATSAPP_BUSINESS_PHONE_ID=your_phone_id
+# WHATSAPP_BUSINESS_TOKEN=your_token
+```
+
+**Important:** Add `.env.local` to `.gitignore`
+```
+# .gitignore
+.env.local
+.env.*.local
+```
+
+### 2.3 Test Connection
+Create `lib/db.ts`:
+```typescript
+import { sql } from '@neondatabase/serverless';
+
+export async function testConnection() {
+  try {
+    const result = await sql`SELECT NOW()`;
+    console.log('✅ Connected to Neon:', result);
+  } catch (error) {
+    console.error('❌ Connection failed:', error);
+  }
+}
+```
+
+Run in API route or server action to verify.
+
+---
+
+## Part 3: Database Schema
+
+### 3.1 Create Tables with Neon Console
+Go to Neon Dashboard → SQL Editor → Run this:
+
+```sql
+-- Items table
+CREATE TABLE items (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  price DECIMAL(10, 2) NOT NULL,
+  category VARCHAR(50),
+  condition VARCHAR(20), -- new, like-new, good, fair
+  seller_id VARCHAR(255), -- clerk user_id for Phase 2
+  is_sold BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Item images (Cloudinary URLs)
+CREATE TABLE item_images (
+  id SERIAL PRIMARY KEY,
+  item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
+  image_url VARCHAR(500) NOT NULL,
+  alt_text VARCHAR(255),
+  display_order INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Wishlists (Phase 1: client-side only via localStorage)
+-- (Keep for reference, implement Phase 2 when adding auth)
+CREATE TABLE wishlists (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255), -- clerk user_id
+  item_id INTEGER REFERENCES items(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, item_id)
+);
+
+-- Create indexes for performance
+CREATE INDEX idx_items_category ON items(category);
+CREATE INDEX idx_items_condition ON items(condition);
+CREATE INDEX idx_items_price ON items(price);
+CREATE INDEX idx_items_created_at ON items(created_at DESC);
+CREATE INDEX idx_item_images_item_id ON item_images(item_id);
+```
+
+### 3.2 Seed Initial Data (Optional)
+```sql
+INSERT INTO items (title, description, price, category, condition, seller_id) VALUES
+('Vintage Black Blazer', 'Timeless wool blazer, perfect for layering. Worn twice.', 45.00, 'clothing', 'like-new', 'seller_akbar'),
+('Leather Brown Belt', 'Italian leather, genuine vintage. Some patina adds character.', 25.00, 'accessories', 'good', 'seller_akbar');
+
+-- Add images for items
+INSERT INTO item_images (item_id, image_url, alt_text, display_order) VALUES
+(1, 'https://res.cloudinary.com/your-cloud/image/upload/v1720xxx/blazer-1.jpg', 'Black blazer front view', 1),
+(1, 'https://res.cloudinary.com/your-cloud/image/upload/v1720xxx/blazer-2.jpg', 'Black blazer back view', 2);
+```
+
+---
+
+## Part 4: API Routes Setup
+
+### 4.1 Query Items (GET `/api/items`)
+Create `app/api/items/route.ts`:
+
+```typescript
+import { sql } from '@neondatabase/serverless';
+import { NextResponse } from 'next/server';
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const category = searchParams.get('category');
+    const condition = searchParams.get('condition');
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+
+    let query = 'SELECT * FROM items WHERE is_sold = FALSE';
+    const params: any[] = [];
+
+    if (category) {
+      query += ' AND category = $' + (params.length + 1);
+      params.push(category);
+    }
+    if (condition) {
+      query += ' AND condition = $' + (params.length + 1);
+      params.push(condition);
+    }
+    if (minPrice) {
+      query += ' AND price >= $' + (params.length + 1);
+      params.push(parseFloat(minPrice));
+    }
+    if (maxPrice) {
+      query += ' AND price <= $' + (params.length + 1);
+      params.push(parseFloat(maxPrice));
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT 100';
+
+    const result = await sql(query, params);
+    
+    return NextResponse.json(result.rows);
+  } catch (error) {
+    console.error('Database error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch items' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 4.2 Get Single Item (GET `/api/items/[id]`)
+Create `app/api/items/[id]/route.ts`:
+
+```typescript
+import { sql } from '@neondatabase/serverless';
+import { NextResponse } from 'next/server';
+
+export async function GET(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const item = await sql`
+      SELECT i.*, json_agg(json_build_object(
+        'id', img.id,
+        'url', img.image_url,
+        'alt', img.alt_text
+      ) ORDER BY img.display_order) as images
+      FROM items i
+      LEFT JOIN item_images img ON i.id = img.item_id
+      WHERE i.id = ${parseInt(params.id)}
+      GROUP BY i.id
+    `;
+
+    if (item.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Item not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(item.rows[0]);
+  } catch (error) {
+    console.error('Database error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch item' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## Part 4.3: Admin Panel for Item Management (MVP)
+
+### Simple Password-Protected Admin Page
+
+Create `app/admin/page.tsx`:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { ItemForm } from '@/components/ItemForm';
+
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '';
+
+export default function AdminPage() {
+  const [password, setPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Check against environment variable
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      setError('');
+      // Store in sessionStorage (clears when browser closes)
+      sessionStorage.setItem('adminAuthenticated', 'true');
+    } else {
+      setError('Incorrect password');
+      setPassword('');
+    }
+  };
+
+  // Check if already authenticated
+  if (typeof window !== 'undefined' && sessionStorage.getItem('adminAuthenticated') && !isAuthenticated) {
+    setIsAuthenticated(true);
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="bg-white shadow-lg rounded-lg p-8 w-full max-w-md">
+          <h1 className="text-3xl font-serif text-gray-900 mb-8">Admin Access</h1>
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                required
+              />
+            </div>
+
+            {error && (
+              <div className="text-red-600 text-sm">{error}</div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-gray-900 text-white py-2 rounded-lg hover:bg-gray-800 transition"
+            >
+              Login
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="max-w-4xl mx-auto py-12 px-4">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-serif text-gray-900">Manage Items</h1>
+          <button
+            onClick={() => {
+              sessionStorage.removeItem('adminAuthenticated');
+              setIsAuthenticated(false);
+            }}
+            className="text-sm text-gray-600 hover:text-gray-900"
+          >
+            Logout
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <ItemForm />
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### Create ItemForm Component
+
+Create `components/ItemForm.tsx`:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+export function ItemForm() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    price: '',
+    category: 'clothing',
+    condition: 'good',
+    imageUrls: [''], // Array for multiple Cloudinary URLs
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (index: number, value: string) => {
+    const newUrls = [...formData.imageUrls];
+    newUrls[index] = value;
+    setFormData(prev => ({ ...prev, imageUrls: newUrls }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          price: parseFloat(formData.price),
+          imageUrls: formData.imageUrls.filter(url => url.trim()), // Remove empty URLs
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create item');
+      }
+
+      setSuccess('Item created successfully!');
+      setFormData({
+        title: '',
+        description: '',
+        price: '',
+        category: 'clothing',
+        condition: 'good',
+        imageUrls: [''],
+      });
+
+      // Refresh items list
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded">{error}</div>}
+      {success && <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded">{success}</div>}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+            placeholder="e.g., Vintage Black Blazer"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Price *</label>
+          <input
+            type="number"
+            name="price"
+            value={formData.price}
+            onChange={handleChange}
+            required
+            placeholder="45.00"
+            step="0.01"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+          <select
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+          >
+            <option value="clothing">Clothing</option>
+            <option value="accessories">Accessories</option>
+            <option value="home">Home & Décor</option>
+            <option value="books">Books</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Condition *</label>
+          <select
+            name="condition"
+            value={formData.condition}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+          >
+            <option value="new">New</option>
+            <option value="like-new">Like New</option>
+            <option value="good">Good</option>
+            <option value="fair">Fair</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          required
+          placeholder="Describe the item, condition, wear notes, styling tips..."
+          rows={4}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Cloudinary Image URLs (paste from Cloudinary dashboard)
+        </label>
+        {formData.imageUrls.map((url, index) => (
+          <input
+            key={index}
+            type="url"
+            value={url}
+            onChange={(e) => handleImageChange(index, e.target.value)}
+            placeholder={`Image URL ${index + 1}`}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 mb-2"
+          />
+        ))}
+        <button
+          type="button"
+          onClick={() => setFormData(prev => ({ 
+            ...prev, 
+            imageUrls: [...prev.imageUrls, ''] 
+          }))}
+          className="text-sm text-gray-600 hover:text-gray-900"
+        >
+          + Add another image
+        </button>
+      </div>
+
+      <button
+        type="submit"
+        disabled={isLoading}
+        className="w-full bg-gray-900 text-white py-3 rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
+      >
+        {isLoading ? 'Creating...' : 'Create Item'}
+      </button>
+    </form>
+  );
+}
+```
+
+### Create POST API Route for Items
+
+Create `app/api/items/route.ts`:
+
+```typescript
+import { sql } from '@neondatabase/serverless';
+import { NextResponse } from 'next/server';
+
+export async function POST(req: Request) {
+  try {
+    const { title, description, price, category, condition, imageUrls } = await req.json();
+
+    // Insert item
+    const itemResult = await sql`
+      INSERT INTO items (title, description, price, category, condition, seller_id)
+      VALUES (${title}, ${description}, ${price}, ${category}, ${condition}, 'seller_akbar')
+      RETURNING id
+    `;
+
+    const itemId = itemResult.rows[0].id;
+
+    // Insert images
+    for (let i = 0; i < imageUrls.length; i++) {
+      await sql`
+        INSERT INTO item_images (item_id, image_url, display_order)
+        VALUES (${itemId}, ${imageUrls[i]}, ${i + 1})
+      `;
+    }
+
+    return NextResponse.json({ success: true, itemId }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating item:', error);
+    return NextResponse.json(
+      { error: 'Failed to create item' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### Access Admin Panel
+
+Visit `http://localhost:3000/admin` and enter your `ADMIN_PASSWORD` from `.env.local`.
+
+---
+
+## Part 5: Environment & Deployment
+
+### 5.1 Local Development
+```bash
+# Start development server
+npm run dev
+
+# Visit http://localhost:3000
+```
+
+### 5.2 Deploy to Vercel
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel
+
+# Add environment variables in Vercel dashboard:
+# - DATABASE_URL (copy from Neon)
+# - NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+# - CLERK keys (Phase 2)
+```
+
+### 5.3 Neon Branching (Development Database)
+```bash
+# Create a dev branch from main
+neon branches create --project-id <project-id> --parent main
+
+# Use dev branch connection string in local development
+# Switch DATABASE_URL in .env.local to dev branch
+```
+
+---
+
+## Part 6: Cloudinary Setup
+
+### 6.1 Create Cloudinary Account
+1. Go to [cloudinary.com](https://cloudinary.com)
+2. Sign up (free tier: 25GB/month)
+3. Copy `CLOUD_NAME` from dashboard
+4. Add to `.env.local`: `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`
+
+### 6.2 Upload Images for Items
+For MVP, manually upload images via Cloudinary dashboard:
+1. Go to Media Library
+2. Upload images
+3. Copy Cloudinary URL from each image
+4. Paste URLs into admin panel when creating items
+
+---
+
+## Part 7: Phase 2 - Add Clerk for Multi-Seller
+
+When you're ready to launch Phase 2 (multi-seller), add Clerk:
+
+### 7.1 Setup Clerk
+1. Go to [clerk.com](https://clerk.com)
+2. Create account
+3. Create application
+4. Copy `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`
+5. Add to `.env.local`
+6. Install: `npm install @clerk/nextjs`
+
+### 7.2 Wrap App with Clerk Provider
+Edit `app/layout.tsx`:
+```typescript
+import { ClerkProvider } from '@clerk/nextjs';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <ClerkProvider>
+      <html>
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
+  );
+}
+```
+
+### 7.3 Replace Admin Panel with Clerk
+- Remove simple password admin panel
+- Create seller dashboard protected with Clerk auth
+- Multiple sellers can now upload items
+
+---
+
+## Quick Start Checklist (MVP)
+
+- [ ] Create Neon account & database
+- [ ] Create Next.js 16.2.10 project
+- [ ] Install dependencies (no Clerk for MVP)
+- [ ] Set up `.env.local` with ADMIN_PASSWORD
+- [ ] Create database schema in Neon
+- [ ] Create API routes (items, item detail)
+- [ ] Create admin panel (ItemForm + authentication page)
+- [ ] Set up Cloudinary account
+- [ ] Upload sample images to Cloudinary
+- [ ] Test database connection
+- [ ] Build gallery & item detail pages
+- [ ] Set up Vercel project
+- [ ] Deploy and verify
+
+---
+
+## Useful Commands
+
+```bash
+# Development
+npm run dev
+
+# Build
+npm run build
+
+# Type check
+npm run type-check
+
+# Lint
+npm run lint
+
+# Connect to Neon CLI
+neon connection-string --project-id <id> --branch main
+
+# Create migration (when using Drizzle)
+npm run db:migrate
+```
+
+---
+
+## Documentation Links
+
+- [Next.js Docs](https://nextjs.org/docs)
+- [Neon Docs](https://neon.tech/docs)
+- [Clerk Docs](https://clerk.com/docs)
+- [Cloudinary Docs](https://cloudinary.com/documentation)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+
+---
+
+**Next: Design system in Figma? Or start building components?**
