@@ -1,10 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORIES, CATEGORY_LABELS, CONDITIONS, CONDITION_LABELS } from "@/lib/types";
+import {
+  CATEGORIES,
+  CATEGORY_LABELS,
+  CONDITIONS,
+  CONDITION_LABELS,
+  type Item,
+} from "@/lib/types";
 import { Label, Select, TextArea, TextInput } from "@/components/form";
 import { Button } from "@/components/Button";
+import { SortableImageGrid } from "@/components/SortableImageGrid";
+
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
 
 const emptyForm = {
   title: "",
@@ -17,6 +26,19 @@ const emptyForm = {
   material: "",
 };
 
+function formFromItem(item: Item): typeof emptyForm {
+  return {
+    title: item.title,
+    description: item.description,
+    price: String(item.price),
+    category: item.category,
+    condition: item.condition,
+    size: item.size ?? "",
+    color: item.color ?? "",
+    material: item.material ?? "",
+  };
+}
+
 interface CloudinarySignature {
   cloudName: string;
   apiKey: string;
@@ -25,24 +47,45 @@ interface CloudinarySignature {
   signature: string;
 }
 
-export function ItemForm() {
+// Create mode when `item` is undefined (POST), edit mode otherwise (PATCH).
+// `onDone` lets a parent (e.g. AdminItemList) collapse the form after a save.
+export function ItemForm({
+  item,
+  onDone,
+  onCreated,
+}: {
+  item?: Item;
+  onDone?: () => void;
+  onCreated?: () => void;
+}) {
+  const isEdit = Boolean(item);
   const router = useRouter();
-  const [form, setForm] = useState(emptyForm);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [form, setForm] = useState(item ? formFromItem(item) : emptyForm);
+  const [imageUrls, setImageUrls] = useState<string[]>(
+    item ? item.images.map((image) => image.url) : [],
+  );
+  const [isSold, setIsSold] = useState(item?.isSold ?? false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  // Number of files currently uploading — drives shimmer placeholder tiles.
+  const [uploadingCount, setUploadingCount] = useState(0);
+  const [isDragActive, setIsDragActive] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isUploading = uploadingCount > 0;
 
   function set(name: keyof typeof emptyForm, value: string) {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
-    if (!files?.length) return;
-    setIsUploading(true);
+  // Uploads each file directly to Cloudinary using a short-lived server
+  // signature, appending secure URLs to imageUrls as they resolve.
+  async function uploadFiles(files: File[]) {
+    const images = files.filter((file) => file.type.startsWith("image/"));
+    if (!images.length) return;
+    setUploadingCount((count) => count + images.length);
     setUploadError("");
 
     try {
@@ -53,8 +96,7 @@ export function ItemForm() {
       }
       const sig = (await sigRes.json()) as CloudinarySignature;
 
-      const uploaded: string[] = [];
-      for (const file of Array.from(files)) {
+      for (const file of images) {
         const body = new FormData();
         body.append("file", file);
         body.append("api_key", sig.apiKey);
@@ -68,17 +110,28 @@ export function ItemForm() {
         );
         if (!res.ok) throw new Error("Cloudinary upload failed");
         const data = (await res.json()) as { secure_url: string };
-        uploaded.push(data.secure_url);
+        setImageUrls((prev) => [...prev, data.secure_url]);
+        setUploadingCount((count) => count - 1);
       }
-      setImageUrls((prev) => [...prev, ...uploaded]);
     } catch (err) {
       setUploadError(
         err instanceof Error ? err.message : "Failed to upload image",
       );
-    } finally {
-      setIsUploading(false);
-      e.target.value = "";
+      setUploadingCount(0);
     }
+  }
+
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (files?.length) void uploadFiles(Array.from(files));
+    e.target.value = "";
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragActive(false);
+    const files = e.dataTransfer.files;
+    if (files?.length) void uploadFiles(Array.from(files));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -88,24 +141,41 @@ export function ItemForm() {
     setSuccess("");
 
     try {
-      const res = await fetch("/api/items", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          price: parseFloat(form.price),
-          imageUrls: imageUrls.filter((url) => url.trim()),
-        }),
-      });
+      const res = await fetch(
+        isEdit ? `/api/items/${item!.id}` : "/api/items",
+        {
+          method: isEdit ? "PATCH" : "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-password": ADMIN_PASSWORD,
+          },
+          body: JSON.stringify({
+            ...form,
+            price: parseFloat(form.price),
+            imageUrls: imageUrls.filter((url) => url.trim()),
+            ...(isEdit ? { isSold } : {}),
+          }),
+        },
+      );
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error ?? "Failed to create item");
+        throw new Error(
+          data?.error ?? (isEdit ? "Failed to update item" : "Failed to create item"),
+        );
       }
-      const data = await res.json();
-      setSuccess(`Item #${data.itemId} created successfully!`);
-      setForm(emptyForm);
-      setImageUrls([]);
-      router.refresh();
+
+      if (isEdit) {
+        setSuccess("Changes saved.");
+        router.refresh();
+        onDone?.();
+      } else {
+        await res.json().catch(() => null);
+        setSuccess(`"${form.title}" created successfully!`);
+        setForm(emptyForm);
+        setImageUrls([]);
+        router.refresh();
+        onCreated?.();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -219,54 +289,127 @@ export function ItemForm() {
       </div>
 
       <div>
-        <Label htmlFor="images">Images</Label>
-        {imageUrls.length > 0 && (
-          <div className="mb-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {imageUrls.map((url, index) => (
-              <div
-                key={url}
-                className="group relative aspect-square overflow-hidden rounded-[4px]"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={`Upload ${index + 1}`}
-                  className="h-full w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImageUrls((prev) => prev.filter((_, i) => i !== index))
-                  }
-                  className="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-[11px] text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-                  aria-label={`Remove image ${index + 1}`}
-                >
-                  ✕
-                </button>
+        <div className="mb-1.5 flex items-baseline justify-between">
+          <Label htmlFor="images">Images</Label>
+          {imageUrls.length > 0 && (
+            <span className="tracked text-[9px] text-fg-faint">
+              Drag to reorder · first is the cover
+            </span>
+          )}
+        </div>
+
+        {(imageUrls.length > 0 || isUploading) && (
+          <div className="mb-3">
+            <SortableImageGrid
+              urls={imageUrls}
+              onReorder={setImageUrls}
+              onRemove={(index) =>
+                setImageUrls((prev) => prev.filter((_, i) => i !== index))
+              }
+            />
+            {isUploading && (
+              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                {Array.from({ length: uploadingCount }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="aspect-square animate-pulse rounded-[6px] bg-glass ring-1 ring-hairline"
+                  />
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
+
+        {/* Awwwards-style dropzone: click to browse or drop files anywhere on it. */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragActive(true);
+          }}
+          onDragLeave={() => setIsDragActive(false)}
+          onDrop={handleDrop}
+          disabled={isUploading}
+          className={`group flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-glass px-6 py-8 text-center transition ${
+            isDragActive
+              ? "border-cream/60 bg-cream/5"
+              : "border-hairline hover:border-fg-muted/50"
+          } disabled:cursor-not-allowed disabled:opacity-60`}
+        >
+          <span
+            className={`flex h-10 w-10 items-center justify-center rounded-full bg-glass text-[18px] text-fg-muted ring-1 ring-hairline transition group-hover:text-fg ${
+              isDragActive ? "scale-110" : ""
+            }`}
+          >
+            ↑
+          </span>
+          <span className="text-[13px] text-fg">
+            {isUploading ? (
+              "Uploading…"
+            ) : (
+              <>
+                Drag images here or{" "}
+                <span className="text-cream underline underline-offset-2">
+                  browse
+                </span>
+              </>
+            )}
+          </span>
+          <span className="tracked text-[9px] text-fg-faint">
+            PNG, JPG · multiple allowed
+          </span>
+        </button>
+
         <input
+          ref={fileInputRef}
           id="images"
           type="file"
           accept="image/*"
           multiple
-          disabled={isUploading}
-          onChange={handleUpload}
-          className="block w-full text-[13px] text-fg-muted file:mr-3 file:cursor-pointer file:rounded-[4px] file:border file:border-white/15 file:bg-white/5 file:px-3 file:py-1.5 file:text-fg hover:file:bg-white/10"
+          hidden
+          onChange={handleInputChange}
         />
-        {isUploading && (
-          <p className="mt-2 text-[12px] text-fg-faint">Uploading…</p>
-        )}
         {uploadError && (
           <p className="mt-2 text-[12px] text-aurora-rose">{uploadError}</p>
         )}
       </div>
 
-      <Button type="submit" disabled={isLoading} className="w-full">
-        {isLoading ? "Creating..." : "Create Item"}
-      </Button>
+      {isEdit && (
+        <label className="flex cursor-pointer items-center gap-3">
+          <input
+            type="checkbox"
+            checked={isSold}
+            onChange={(e) => setIsSold(e.target.checked)}
+            className="h-4 w-4 accent-cream"
+          />
+          <span className="text-[13px] text-fg-muted">
+            Mark as sold (hides it from the public catalog)
+          </span>
+        </label>
+      )}
+
+      <div className="flex gap-3">
+        <Button type="submit" disabled={isLoading} className="flex-1">
+          {isLoading
+            ? isEdit
+              ? "Saving..."
+              : "Creating..."
+            : isEdit
+              ? "Save Changes"
+              : "Create Item"}
+        </Button>
+        {isEdit && onDone && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={onDone}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+        )}
+      </div>
     </form>
   );
 }

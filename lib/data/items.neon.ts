@@ -1,5 +1,10 @@
 import { sql } from "@/lib/db";
-import type { CreateItemInput, Item, ItemFilters } from "@/lib/types";
+import type {
+  CreateItemInput,
+  Item,
+  ItemFilters,
+  UpdateItemInput,
+} from "@/lib/types";
 
 // SQL-backed adapter. Active when DATABASE_URL is set (see lib/data/items.ts).
 // `sql` is guaranteed non-null here because the index only delegates to this
@@ -21,6 +26,7 @@ interface ItemRow {
   material: string | null;
   seller_id: string;
   is_sold: boolean;
+  sort_order: number | null;
   created_at: string | Date;
   images:
     | {
@@ -45,6 +51,7 @@ function mapRow(row: ItemRow): Item {
     material: row.material ?? undefined,
     sellerId: row.seller_id,
     isSold: row.is_sold,
+    sortOrder: row.sort_order ?? 0,
     createdAt: new Date(row.created_at).toISOString(),
     images: (row.images ?? []).map((image) => ({
       id: image.id,
@@ -72,8 +79,11 @@ const IMAGES_SUBQUERY = `COALESCE(
   '[]'
 ) AS images`;
 
-export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
-  const conditions = ["i.is_sold = false"];
+async function queryItems(
+  filters: ItemFilters,
+  includeSold: boolean,
+): Promise<Item[]> {
+  const conditions = includeSold ? ["TRUE"] : ["i.is_sold = false"];
   const params: unknown[] = [];
 
   if (filters.category?.length) {
@@ -104,7 +114,7 @@ export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
       ? "i.price ASC"
       : filters.sort === "price-desc"
         ? "i.price DESC"
-        : "i.created_at DESC";
+        : "i.sort_order ASC NULLS LAST, i.created_at DESC";
 
   const query = `
     SELECT i.*, ${IMAGES_SUBQUERY}
@@ -115,6 +125,15 @@ export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
 
   const rows = (await db().query(query, params)) as ItemRow[];
   return rows.map(mapRow);
+}
+
+export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
+  return queryItems(filters, false);
+}
+
+// Admin view: includes sold items so they can still be managed.
+export async function getAllItems(filters: ItemFilters = {}): Promise<Item[]> {
+  return queryItems(filters, true);
 }
 
 export async function getItem(id: number): Promise<Item | null> {
@@ -129,8 +148,10 @@ export async function getItem(id: number): Promise<Item | null> {
 
 export async function createItem(input: CreateItemInput): Promise<Item> {
   const inserted = (await db().query(
-    `INSERT INTO items (title, description, price, category, condition, size, color, material)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    // New items go to the top of the catalog (min sort_order − 1).
+    `INSERT INTO items (title, description, price, category, condition, size, color, material, sort_order)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8,
+             (SELECT COALESCE(MIN(sort_order), 1) - 1 FROM items))
      RETURNING id`,
     [
       input.title,
@@ -158,4 +179,63 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
   const item = await getItem(itemId);
   if (!item) throw new Error("Failed to load created item");
   return item;
+}
+
+export async function updateItem(
+  id: number,
+  input: UpdateItemInput,
+): Promise<Item | null> {
+  const updated = (await db().query(
+    `UPDATE items
+     SET title = $1, description = $2, price = $3, category = $4,
+         condition = $5, size = $6, color = $7, material = $8, is_sold = $9
+     WHERE id = $10
+     RETURNING id`,
+    [
+      input.title,
+      input.description,
+      input.price,
+      input.category,
+      input.condition,
+      input.size || null,
+      input.color || null,
+      input.material || null,
+      input.isSold ?? false,
+      id,
+    ],
+  )) as { id: number }[];
+
+  if (!updated[0]) return null;
+
+  // Replace the image set: drop existing rows, re-insert in order.
+  await db().query(`DELETE FROM item_images WHERE item_id = $1`, [id]);
+  const urls = input.imageUrls.filter((url) => url.trim());
+  for (let i = 0; i < urls.length; i++) {
+    await db().query(
+      `INSERT INTO item_images (item_id, url, alt, display_order)
+       VALUES ($1, $2, $3, $4)`,
+      [id, urls[i], input.title, i + 1],
+    );
+  }
+
+  return getItem(id);
+}
+
+export async function deleteItem(id: number): Promise<boolean> {
+  // item_images rows are removed via ON DELETE CASCADE.
+  const deleted = (await db().query(
+    `DELETE FROM items WHERE id = $1 RETURNING id`,
+    [id],
+  )) as { id: number }[];
+  return deleted.length > 0;
+}
+
+// Reassign sort_order by the given id order (index 0 → shown first).
+export async function reorderItems(orderedIds: number[]): Promise<void> {
+  for (let i = 0; i < orderedIds.length; i++) {
+    await db().query(`UPDATE items SET sort_order = $1 WHERE id = $2`, [
+      i + 1,
+      orderedIds[i],
+    ]);
+  }
 }

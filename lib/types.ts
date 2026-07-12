@@ -32,6 +32,9 @@ export interface Item {
   material?: string;
   sellerId: string;
   isSold: boolean;
+  // Admin-controlled catalog position. Lower = shown earlier. Drives the default
+  // (non-price) sort in the public gallery and admin list.
+  sortOrder: number;
   createdAt: string;
   images: ItemImage[];
 }
@@ -55,6 +58,18 @@ export interface CreateItemInput {
   color?: string;
   material?: string;
   imageUrls: string[];
+}
+
+// Full replacement of an existing item's editable fields. `isSold` toggles
+// whether the item shows in the public catalog.
+export interface UpdateItemInput extends CreateItemInput {
+  isSold?: boolean;
+}
+
+// Batch reorder payload: the full list of item ids in their new display order.
+// Index 0 becomes the first item shown.
+export interface ReorderInput {
+  orderedIds: number[];
 }
 
 export const CATEGORY_LABELS: Record<Category, string> = {

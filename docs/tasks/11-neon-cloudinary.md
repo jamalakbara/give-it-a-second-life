@@ -21,7 +21,7 @@ above the data layer moves.
 **Out**
 
 - Auth hardening (still `NEXT_PUBLIC_ADMIN_PASSWORD`)
-- Editing/deleting items, sold toggle UI
+- Editing/deleting items, sold toggle UI — **now delivered in task 13**
 - Wishlist/newsletter persistence (separate tasks)
 
 ## Checklist

@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { ItemForm } from "@/components/ItemForm";
+import { AdminItemList } from "@/components/AdminItemList";
 import { Label, TextInput } from "@/components/form";
 import { Button } from "@/components/Button";
 
@@ -23,6 +24,7 @@ function setAuth(value: boolean) {
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [refreshToken, setRefreshToken] = useState(0);
   const isAuthenticated = useSyncExternalStore(
     subscribeAuth,
     () => sessionStorage.getItem("adminAuthenticated") === "true",
@@ -89,13 +91,14 @@ export default function AdminPage() {
           </button>
         </div>
         <div className="glass rounded-3xl p-8">
-          <ItemForm />
+          <ItemForm onCreated={() => setRefreshToken((n) => n + 1)} />
         </div>
         <p className="mt-4 text-[12px] text-fg-faint">
           Items persist to Neon Postgres when DATABASE_URL is set; otherwise
           they use the in-memory mock and reset on server restart. Image uploads
           require Cloudinary env vars.
         </p>
+        <AdminItemList refreshToken={refreshToken} />
       </div>
     </div>
   );

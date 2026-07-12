@@ -5,7 +5,7 @@ Password-protected admin page to create items (MVP-simple, per TECH_SETUP §4.3)
 
 ## Scope
 - In: password gate (env var + sessionStorage), ItemForm, POST wiring
-- Out: Clerk auth (Phase 2), edit/delete items
+- Out: Clerk auth (Phase 2); edit/delete items — **now delivered in task 13**
 
 ## Checklist
 - [x] `app/admin/page.tsx` — password gate using `NEXT_PUBLIC_ADMIN_PASSWORD`, sessionStorage persistence, logout

@@ -2,11 +2,12 @@ import type {
   CreateItemInput,
   Item,
   ItemFilters,
+  UpdateItemInput,
 } from "@/lib/types";
 
 // Mock adapter: in-memory store standing in for Neon until the DB task.
-// Repository surface (getItems/getItem/createItem) is the swap point —
-// replace the internals with SQL and nothing above this layer changes.
+// Repository surface (getItems/getItem/createItem/updateItem/deleteItem) is the
+// swap point — replace the internals with SQL and nothing above this layer changes.
 
 function img(itemId: number, seed: string, alt: string, order: number) {
   return {
@@ -17,7 +18,7 @@ function img(itemId: number, seed: string, alt: string, order: number) {
   };
 }
 
-export const seedItems: Item[] = [
+const rawSeedItems: Omit<Item, "sortOrder">[] = [
   {
     id: 1,
     title: "Vintage Black Wool Blazer",
@@ -277,13 +278,21 @@ export const seedItems: Item[] = [
   },
 ];
 
+// Assign sortOrder newest-first so the default view matches prior behaviour
+// (lower sortOrder shows earlier). Admin drag-reorder overwrites these.
+export const seedItems: Item[] = [...rawSeedItems]
+  .sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  )
+  .map((item, i) => ({ ...item, sortOrder: i + 1 }));
+
 // Survives HMR in dev; resets on server restart (mock only).
 const globalStore = globalThis as unknown as { __items?: Item[] };
 globalStore.__items ??= seedItems;
 const items = globalStore.__items;
 
-export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
-  let result = items.filter((item) => !item.isSold);
+function applyFilters(base: Item[], filters: ItemFilters): Item[] {
+  let result = base;
 
   if (filters.category?.length) {
     result = result.filter((item) => filters.category!.includes(item.category));
@@ -316,13 +325,27 @@ export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
       result.sort((a, b) => b.price - a.price);
       break;
     default:
+      // Admin-defined catalog order (lower sortOrder first), createdAt as tiebreak.
       result.sort(
         (a, b) =>
+          a.sortOrder - b.sortOrder ||
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
   }
 
   return result;
+}
+
+export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
+  return applyFilters(
+    items.filter((item) => !item.isSold),
+    filters,
+  );
+}
+
+// Admin view: includes sold items so they can still be managed.
+export async function getAllItems(filters: ItemFilters = {}): Promise<Item[]> {
+  return applyFilters([...items], filters);
 }
 
 export async function getItem(id: number): Promise<Item | null> {
@@ -331,6 +354,10 @@ export async function getItem(id: number): Promise<Item | null> {
 
 export async function createItem(input: CreateItemInput): Promise<Item> {
   const id = Math.max(0, ...items.map((item) => item.id)) + 1;
+  // New items go to the top of the catalog (min sortOrder − 1).
+  const minOrder = items.length
+    ? Math.min(...items.map((item) => item.sortOrder))
+    : 1;
   const item: Item = {
     id,
     title: input.title,
@@ -343,6 +370,7 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
     material: input.material || undefined,
     sellerId: "seller_akbar",
     isSold: false,
+    sortOrder: minOrder - 1,
     createdAt: new Date().toISOString(),
     images: input.imageUrls.map((url, i) => ({
       id: id * 10 + i + 1,
@@ -353,4 +381,46 @@ export async function createItem(input: CreateItemInput): Promise<Item> {
   };
   items.push(item);
   return item;
+}
+
+export async function updateItem(
+  id: number,
+  input: UpdateItemInput,
+): Promise<Item | null> {
+  const existing = items.find((item) => item.id === id);
+  if (!existing) return null;
+
+  existing.title = input.title;
+  existing.description = input.description;
+  existing.price = input.price;
+  existing.category = input.category;
+  existing.condition = input.condition;
+  existing.size = input.size || undefined;
+  existing.color = input.color || undefined;
+  existing.material = input.material || undefined;
+  existing.isSold = input.isSold ?? existing.isSold;
+  existing.images = input.imageUrls.map((url, i) => ({
+    id: id * 10 + i + 1,
+    url,
+    alt: input.title,
+    displayOrder: i + 1,
+  }));
+
+  return existing;
+}
+
+export async function deleteItem(id: number): Promise<boolean> {
+  const index = items.findIndex((item) => item.id === id);
+  if (index === -1) return false;
+  items.splice(index, 1);
+  return true;
+}
+
+// Reassign sortOrder by the given id order (index 0 → shown first). Ids not in
+// the list keep their current sortOrder.
+export async function reorderItems(orderedIds: number[]): Promise<void> {
+  orderedIds.forEach((id, index) => {
+    const item = items.find((entry) => entry.id === id);
+    if (item) item.sortOrder = index + 1;
+  });
 }

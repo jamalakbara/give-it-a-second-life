@@ -67,6 +67,20 @@ The platform will transition to a revenue model once multi-seller functionality 
   - "Contact via WhatsApp" button
   - Seller info (Akbar's name, bio)
 
+- **Admin Item Management** (password-gated `/admin`)
+  - Create items (title, price, category, condition, size/color/material, image uploads)
+  - **Multi-image upload with reordering** — drag-and-drop uploader; drag thumbnails to
+    reorder; the first image is the catalog cover (see TECH_SETUP § 8.4)
+  - **Edit** any existing item — update fields and replace its image set
+  - **Delete** any existing item — removes it and its images
+  - **Reorder products** — drag items in the admin list to set the catalog order; this
+    order drives the public gallery's default view (price sort still overrides). Persisted
+    via `PATCH /api/items/reorder` (see TECH_SETUP § 8)
+  - **Mark Sold / Available** — a sold item is hidden from the public catalog but stays
+    in the admin list for management (see § 12 inventory)
+  - Mutating endpoints (`POST`/`PATCH`/`DELETE`) require the admin secret via the
+    `x-admin-password` header (see TECH_SETUP § 4.4)
+
 #### 3.2 Contact Flow (MVP)
 - WhatsApp contact button on each item
 - Pre-filled message template: "Hi! I'm interested in [Item Name]. Is it still available?"
@@ -321,7 +335,9 @@ The platform will transition to a revenue model once multi-seller functionality 
 1. **Shipping Strategy:** How will items be shipped? (Seller arranges, platform handles, local pickup only?)
 2. **Returns Policy:** What's the return window and who pays for returns?
 3. **Seller Onboarding:** Verification requirements for multi-seller phase?
-4. **Inventory Management:** How to handle sold-out items and restocks?
+4. **Inventory Management:** Sold items are handled via the admin **Mark Sold** toggle
+   (`is_sold` flag) — hidden from the public catalog, retained in the admin list. Restocks
+   and multi-quantity inventory remain open for a future phase.
 5. **Commission Timing:** When does the platform collect commission? (Before delivery, after verification?)
 
 ---

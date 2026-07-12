@@ -612,6 +612,56 @@ Visit `http://localhost:3000/admin` and enter your `ADMIN_PASSWORD` from `.env.l
 
 ---
 
+## Part 4.4: Edit, Delete & Sold Toggle
+
+Extends the create-only admin panel so items can be **edited**, **deleted**, and
+**marked sold/available** after creation.
+
+### Auth on mutating endpoints
+
+Create/edit/delete are destructive, so the API guards them with a shared secret.
+The client sends the admin password in the `x-admin-password` header; the server
+compares it in `lib/adminAuth.ts` (`isAuthorized(req)`) against
+`ADMIN_PASSWORD ?? NEXT_PUBLIC_ADMIN_PASSWORD`. A missing/wrong header → `401`.
+`GET` endpoints stay public. (This is an MVP stopgap; replace with real auth — e.g.
+Clerk — in Phase 2.)
+
+### API surface
+
+| Method + route            | Auth | Purpose                                                        |
+|---------------------------|------|---------------------------------------------------------------|
+| `GET /api/items`          | no   | Public catalog. `?includeSold=true` → admin view incl. sold   |
+| `POST /api/items`         | yes  | Create an item                                                |
+| `GET /api/items/[id]`     | no   | Single item                                                   |
+| `PATCH /api/items/[id]`   | yes  | Full-replace editable fields + `isSold`; replaces image set   |
+| `DELETE /api/items/[id]`  | yes  | Delete item (`item_images` removed via `ON DELETE CASCADE`)   |
+
+- Payload validation for `POST` and `PATCH` is shared in `lib/validateItem.ts`
+  (`parseItemInput`) — same rules (title/description required, price > 0, category/
+  condition in the allowed unions).
+- `PATCH` does a **full replace** of the image set: existing `item_images` rows are
+  deleted and re-inserted from `imageUrls` in order.
+- Cloudinary files are **not** deleted on item delete (orphaned but harmless).
+
+### Data layer
+
+`lib/data/items.{ts,mock,neon}.ts` gain `getAllItems` (catalog incl. sold),
+`updateItem(id, input)`, and `deleteItem(id)`, exported through the same adapter swap
+point as `getItems`/`createItem`. `UpdateItemInput` (`lib/types.ts`) = `CreateItemInput`
+plus optional `isSold`.
+
+### Admin UI
+
+- `components/ItemForm.tsx` is now dual-mode: no `item` prop → create (`POST`);
+  with an `item` prop → edit (`PATCH`), prefilled, with a **Mark as sold** checkbox and
+  a Cancel action. Both modes send the `x-admin-password` header.
+- `components/AdminItemList.tsx` (new) lists all items (`?includeSold=true`) with a
+  thumbnail, price, an Available/Sold badge, and **Edit** (expands an inline `ItemForm`)
+  + **Delete** (two-step inline confirm, no browser dialog) actions.
+- `app/admin/page.tsx` renders `<AdminItemList />` below the create form.
+
+---
+
 ## Part 5: Environment & Deployment
 
 ### 5.1 Local Development
@@ -700,6 +750,53 @@ export default function RootLayout({
 - Remove simple password admin panel
 - Create seller dashboard protected with Clerk auth
 - Multiple sellers can now upload items
+
+---
+
+## Part 8: Product Ordering & Enhanced Image Upload
+
+Lets the admin control the **catalog order** of products and the **order of an
+item's images**, plus a refined drag-and-drop image uploader. Uses `@dnd-kit`
+(`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`) for both drag surfaces.
+
+### 8.1 Schema — `items.sort_order`
+
+`item_images.display_order` already existed; items now get their own position:
+
+```sql
+ALTER TABLE items ADD COLUMN IF NOT EXISTS sort_order INTEGER;
+-- Backfill existing rows newest-first (lower = shown earlier):
+UPDATE items SET sort_order = sub.rn
+  FROM (SELECT id, row_number() OVER (ORDER BY created_at DESC) AS rn FROM items) sub
+  WHERE items.id = sub.id AND items.sort_order IS NULL;
+CREATE INDEX IF NOT EXISTS idx_items_sort_order ON items (sort_order ASC);
+```
+
+`npm run db:setup` applies this idempotently (no reseed if rows exist).
+
+### 8.2 Default sort → custom order
+
+The default (non-price) sort in both adapters (`lib/data/items.neon.ts`,
+`lib/data/items.mock.ts`) is now `sort_order ASC NULLS LAST, created_at DESC`.
+The `price-asc` / `price-desc` filter options are unchanged and still override the
+custom order. New items are inserted at the **top** (`MIN(sort_order) − 1`).
+
+### 8.3 `PATCH /api/items/reorder`
+
+- **Auth:** admin secret via `x-admin-password` (same `isAuthorized` as other mutating routes).
+- **Body:** `{ "orderedIds": number[] }` — the full list of item ids in their new order; index 0 is shown first.
+- **Effect:** `reorderItems()` sets each item's `sort_order` to its index + 1.
+- **Response:** `{ "success": true }`, or `400` if `orderedIds` isn't an array of integers.
+
+The admin list (`components/AdminItemList.tsx`) reorders optimistically and
+**auto-saves on drop**; on failure it reloads to snap back to server truth.
+
+### 8.4 Image ordering
+
+No new endpoint. `components/ItemForm.tsx` holds an ordered `imageUrls` array; the
+drag-to-reorder grid (`components/SortableImageGrid.tsx`) mutates that array, and
+create/update already map array index → `item_images.display_order`. The first
+image is the catalog cover.
 
 ---
 

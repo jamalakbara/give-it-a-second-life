@@ -8,5 +8,9 @@ import * as neon from "./items.neon";
 const adapter = hasDatabase ? neon : mock;
 
 export const getItems = adapter.getItems;
+export const getAllItems = adapter.getAllItems;
 export const getItem = adapter.getItem;
 export const createItem = adapter.createItem;
+export const updateItem = adapter.updateItem;
+export const deleteItem = adapter.deleteItem;
+export const reorderItems = adapter.reorderItems;

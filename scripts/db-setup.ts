@@ -49,8 +49,8 @@ async function main() {
 
   for (const item of seedItems) {
     const inserted = (await sql.query(
-      `INSERT INTO items (title, description, price, category, condition, size, color, material, seller_id, is_sold, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      `INSERT INTO items (title, description, price, category, condition, size, color, material, seller_id, is_sold, sort_order, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING id`,
       [
         item.title,
@@ -63,6 +63,7 @@ async function main() {
         item.material ?? null,
         item.sellerId,
         item.isSold,
+        item.sortOrder,
         item.createdAt,
       ],
     )) as { id: number }[];

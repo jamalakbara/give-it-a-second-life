@@ -2,11 +2,13 @@
 
 **Design Reference:** jackwatkins.co/works (live, inspected July 2026)
 **Aesthetic:** Dark "living gallery" — near-black stage, drifting aurora glow, high-contrast serif display, glassmorphic UI, large staggered imagery
-**Status:** MVP Design System — v2.1 (rebuilt to match the current reference 1:1, incl. card hover interaction)
+**Status:** MVP Design System — v2.3 (adds drag-and-drop image uploader with reorderable thumbnails + cover badge, and drag-to-reorder admin product list)
 
 > **Note (v2.0):** The original v1.0 spec described a *light* cream/charcoal/gold adaptation. The live reference is a **dark aurora** portfolio, so the system was rebuilt to match it pixel-for-pixel. Tokens below reflect what is actually implemented in `app/globals.css` (Tailwind v4 `@theme`).
 >
 > **Note (v2.1):** The item-card hover was matched 1:1 to the reference by inspecting its computed styles — magnetic cursor-following pill + `perspective: 800px` 3D tilt, no dim overlay (see §2.4). Gallery grid geometry (480px columns, 160px gaps, ~254px stagger) was measured off the reference too.
+>
+> **Note (v2.3):** The admin image input became a full **drag-and-drop dropzone** with reorderable thumbnails (first = cover), and the admin product list became **drag-to-reorder** (auto-saves catalog order). Both drag surfaces use `@dnd-kit` (see §2.6 image upload + admin list).
 
 ---
 
@@ -135,7 +137,24 @@ Large **portrait 3:4** image, `rounded-6px`, hairline ring. Below image, left-al
 ### 2.6 Forms (`components/form.tsx`)
 Inputs = `.glass` fill, hairline ring, `rounded-xl`, focus ring `fg-muted`. Labels are small `.tracked`-ish muted caps. Used by admin item form, newsletter (glass pill wrapper), search.
 
-**Image upload (`components/ItemForm.tsx`)** — the admin item form no longer takes raw image URLs. A native `<input type="file" multiple>` (styled `file:` pill — glass border, `rounded-[4px]`) uploads directly to Cloudinary via a signed request (`POST /api/upload` returns the signature; the browser posts the file to Cloudinary). Returned `secure_url`s render as a 3–4 col grid of square thumbnails (`rounded-[4px]`) with a hover ✕ remove button. Uploads are disabled when Cloudinary env vars are absent.
+**Image upload (`components/ItemForm.tsx` + `components/SortableImageGrid.tsx`)** — a **drag-and-drop dropzone**: dashed `hairline` border on `.glass`, `rounded-xl`, a circular `↑` glyph badge, "Drag images here or **browse**" (browse in `cream` underline), and a `.tracked` "PNG, JPG · multiple allowed" hint. It highlights (`border-cream/60 bg-cream/5`, badge scales) while a file is dragged over it, and clicking anywhere opens a hidden `<input type="file" multiple>`. Files upload directly to Cloudinary via a signed request (`POST /api/upload`). Uploaded thumbnails render in a **drag-to-reorder** 3–4 col grid (`@dnd-kit` sortable, `rounded-[6px]`, hairline ring): the first tile shows a cream **"Cover"** chip (`bg-cream text-void`), each has a hover ✕ (hovers to `aurora-rose/80`), and in-flight uploads show `animate-pulse` glass placeholder tiles. Uploads are disabled when Cloudinary env vars are absent.
+
+**Edit mode (`components/ItemForm.tsx`)** — the same form is dual-mode. Given an `item`
+prop it prefills every field + the existing thumbnails, swaps the submit label to **Save
+Changes**, adds a glass **Cancel** button (`variant="secondary"`) beside it, and shows a
+**Mark as sold** checkbox (`accent-cream`) that hides the item from the public catalog.
+Create mode is unchanged.
+
+**Admin item list (`components/AdminItemList.tsx`)** — below the create card on `/admin`.
+Each item is a `.glass rounded-2xl` row: 64px `rounded-xl` thumbnail, category·condition
+eyebrow, serif title, IDR price, and an **Available/Sold** badge (sold = `aurora-rose/15`
+tinted pill, available = plain glass pill). Right-aligned `.tracked` text actions: **Edit**
+(toggles an inline `ItemForm` under a hairline divider) and **Delete** (`aurora-rose` toned)
+which flips to a **two-step inline confirm** — a glass Confirm button + Cancel — instead of
+a browser `confirm()` dialog. Rows are **drag-to-reorder** (`@dnd-kit` vertical sortable): a
+`⠿` grip handle on the left (`cursor-grab`, `fg-faint` → `fg` on hover) sets catalog order,
+which **auto-saves on drop** (`PATCH /api/items/reorder`); the dragged row lifts with a
+shadow. The grip is disabled while that row's edit form is open.
 
 ### 2.7 Item detail (`app/items/[id]/page.tsx`)
 `.veil` section, 55/45 two-column (image gallery left, info right; stacked on mobile). Info: category eyebrow → serif `text-h2` title → 26px IDR price + condition chip → muted description → spec list (tracked labels) → cream WhatsApp pill + glass wishlist button → seller block (Akbar). Product JSON-LD retained.
@@ -185,7 +204,11 @@ components/FilterBar.tsx→ glass filter toolbar
 components/Button.tsx   → cream / glass pill variants
 components/form.tsx     → glass inputs
 components/Badge.tsx    → condition / category chips
+components/ItemForm.tsx → admin create/edit form (dual-mode, drag-drop uploader, sold toggle)
+components/SortableImageGrid.tsx → drag-to-reorder image thumbnails (@dnd-kit, cover badge)
+components/AdminItemList.tsx → admin item list (drag-reorder rows, sold badge, edit + inline delete confirm)
 app/page.tsx           → hero + staggered gallery
+app/admin/page.tsx     → password gate + create form + AdminItemList
 app/items/[id]/page.tsx→ detail
 ```
 
