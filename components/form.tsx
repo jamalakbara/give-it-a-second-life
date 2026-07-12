@@ -44,8 +44,26 @@ export function Select({
   ...props
 }: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={`${fieldBase} ${className}`} {...props}>
-      {children}
-    </select>
+    <div className="relative">
+      <select
+        className={`${fieldBase} cursor-pointer appearance-none pr-11 [&>option]:bg-ink [&>option]:text-fg ${className}`}
+        {...props}
+      >
+        {children}
+      </select>
+      {/* Custom chevron — inset from edge so it doesn't crowd the border */}
+      <svg
+        aria-hidden
+        viewBox="0 0 24 24"
+        className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-muted"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    </div>
   );
 }

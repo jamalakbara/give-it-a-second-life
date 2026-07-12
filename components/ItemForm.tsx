@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CATEGORIES,
@@ -12,6 +12,7 @@ import {
 import { Label, Select, TextArea, TextInput } from "@/components/form";
 import { Button } from "@/components/Button";
 import { SortableImageGrid } from "@/components/SortableImageGrid";
+import { MediaPicker } from "@/components/MediaPicker";
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
 
@@ -39,14 +40,6 @@ function formFromItem(item: Item): typeof emptyForm {
   };
 }
 
-interface CloudinarySignature {
-  cloudName: string;
-  apiKey: string;
-  timestamp: number;
-  folder: string;
-  signature: string;
-}
-
 // Create mode when `item` is undefined (POST), edit mode otherwise (PATCH).
 // `onDone` lets a parent (e.g. AdminItemList) collapse the form after a save.
 export function ItemForm({
@@ -66,72 +59,20 @@ export function ItemForm({
   );
   const [isSold, setIsSold] = useState(item?.isSold ?? false);
   const [isLoading, setIsLoading] = useState(false);
-  // Number of files currently uploading — drives shimmer placeholder tiles.
-  const [uploadingCount, setUploadingCount] = useState(0);
-  const [isDragActive, setIsDragActive] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const isUploading = uploadingCount > 0;
 
   function set(name: keyof typeof emptyForm, value: string) {
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  // Uploads each file directly to Cloudinary using a short-lived server
-  // signature, appending secure URLs to imageUrls as they resolve.
-  async function uploadFiles(files: File[]) {
-    const images = files.filter((file) => file.type.startsWith("image/"));
-    if (!images.length) return;
-    setUploadingCount((count) => count + images.length);
-    setUploadError("");
-
-    try {
-      const sigRes = await fetch("/api/upload", { method: "POST" });
-      if (!sigRes.ok) {
-        const data = await sigRes.json().catch(() => null);
-        throw new Error(data?.error ?? "Upload not available");
-      }
-      const sig = (await sigRes.json()) as CloudinarySignature;
-
-      for (const file of images) {
-        const body = new FormData();
-        body.append("file", file);
-        body.append("api_key", sig.apiKey);
-        body.append("timestamp", String(sig.timestamp));
-        body.append("folder", sig.folder);
-        body.append("signature", sig.signature);
-
-        const res = await fetch(
-          `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
-          { method: "POST", body },
-        );
-        if (!res.ok) throw new Error("Cloudinary upload failed");
-        const data = (await res.json()) as { secure_url: string };
-        setImageUrls((prev) => [...prev, data.secure_url]);
-        setUploadingCount((count) => count - 1);
-      }
-    } catch (err) {
-      setUploadError(
-        err instanceof Error ? err.message : "Failed to upload image",
-      );
-      setUploadingCount(0);
-    }
-  }
-
-  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = e.target.files;
-    if (files?.length) void uploadFiles(Array.from(files));
-    e.target.value = "";
-  }
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragActive(false);
-    const files = e.dataTransfer.files;
-    if (files?.length) void uploadFiles(Array.from(files));
+  // Appends picked/uploaded URLs, skipping any already on the item.
+  function addUrls(urls: string[]) {
+    setImageUrls((prev) => [
+      ...prev,
+      ...urls.filter((url) => !prev.includes(url)),
+    ]);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -298,7 +239,7 @@ export function ItemForm({
           )}
         </div>
 
-        {(imageUrls.length > 0 || isUploading) && (
+        {imageUrls.length > 0 && (
           <div className="mb-3">
             <SortableImageGrid
               urls={imageUrls}
@@ -307,84 +248,62 @@ export function ItemForm({
                 setImageUrls((prev) => prev.filter((_, i) => i !== index))
               }
             />
-            {isUploading && (
-              <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {Array.from({ length: uploadingCount }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="aspect-square animate-pulse rounded-[6px] bg-glass ring-1 ring-hairline"
-                  />
-                ))}
-              </div>
-            )}
           </div>
         )}
 
-        {/* Awwwards-style dropzone: click to browse or drop files anywhere on it. */}
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragActive(true);
-          }}
-          onDragLeave={() => setIsDragActive(false)}
-          onDrop={handleDrop}
-          disabled={isUploading}
-          className={`group flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-glass px-6 py-8 text-center transition ${
-            isDragActive
-              ? "border-cream/60 bg-cream/5"
-              : "border-hairline hover:border-fg-muted/50"
-          } disabled:cursor-not-allowed disabled:opacity-60`}
+          onClick={() => setPickerOpen(true)}
+          className="group flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-hairline bg-glass px-6 py-8 text-center transition hover:border-fg-muted/50"
         >
-          <span
-            className={`flex h-10 w-10 items-center justify-center rounded-full bg-glass text-[18px] text-fg-muted ring-1 ring-hairline transition group-hover:text-fg ${
-              isDragActive ? "scale-110" : ""
-            }`}
-          >
-            ↑
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-glass text-[18px] text-fg-muted ring-1 ring-hairline transition group-hover:text-fg">
+            +
           </span>
           <span className="text-[13px] text-fg">
-            {isUploading ? (
-              "Uploading…"
-            ) : (
-              <>
-                Drag images here or{" "}
-                <span className="text-cream underline underline-offset-2">
-                  browse
-                </span>
-              </>
-            )}
+            Add images from{" "}
+            <span className="text-cream underline underline-offset-2">
+              gallery
+            </span>{" "}
+            or upload
           </span>
           <span className="tracked text-[9px] text-fg-faint">
-            PNG, JPG · multiple allowed
+            Reuse an uploaded photo or drop a new one
           </span>
         </button>
 
-        <input
-          ref={fileInputRef}
-          id="images"
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          onChange={handleInputChange}
-        />
-        {uploadError && (
-          <p className="mt-2 text-[12px] text-aurora-rose">{uploadError}</p>
+        {pickerOpen && (
+          <MediaPicker
+            onClose={() => setPickerOpen(false)}
+            existing={imageUrls}
+            onAdd={addUrls}
+          />
         )}
       </div>
 
       {isEdit && (
         <label className="flex cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            checked={isSold}
-            onChange={(e) => setIsSold(e.target.checked)}
-            className="h-4 w-4 accent-cream"
-          />
+          <span className="relative flex h-[18px] w-[18px] items-center justify-center">
+            <input
+              type="checkbox"
+              checked={isSold}
+              onChange={(e) => setIsSold(e.target.checked)}
+              className="peer h-[18px] w-[18px] cursor-pointer appearance-none rounded-[5px] bg-glass ring-1 ring-hairline transition checked:bg-cream checked:ring-cream focus-visible:ring-2 focus-visible:ring-fg-muted"
+            />
+            <svg
+              aria-hidden
+              viewBox="0 0 24 24"
+              className="pointer-events-none absolute h-3 w-3 text-ink opacity-0 transition peer-checked:opacity-100"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </span>
           <span className="text-[13px] text-fg-muted">
-            Mark as sold (hides it from the public catalog)
+            Mark as sold (stays in the catalog with a “Sold out” tag)
           </span>
         </label>
       )}

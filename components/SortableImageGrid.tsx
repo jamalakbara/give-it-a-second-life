@@ -121,11 +121,16 @@ function SortableThumb({
         </span>
       )}
 
+      {/* Position badge — mirrors the display order submitted to the API. */}
+      <span className="pointer-events-none absolute bottom-1.5 left-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-[10px] font-medium text-white backdrop-blur-sm">
+        {index + 1}
+      </span>
+
       <button
         type="button"
         onPointerDown={(e) => e.stopPropagation()}
         onClick={onRemove}
-        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[12px] text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 hover:bg-aurora-rose/80 group-hover:opacity-100"
+        className="absolute right-1.5 top-1.5 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full bg-black/60 text-[12px] text-white opacity-0 backdrop-blur-sm transition-opacity duration-200 hover:bg-accent/80 group-hover:opacity-100"
         aria-label={`Remove image ${index + 1}`}
       >
         ✕

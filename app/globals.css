@@ -1,27 +1,31 @@
 @import "tailwindcss";
 
 @theme {
-  /* Base — dark aurora stage (matches jackwatkins.co/works) */
-  --color-void: #010008;
-  --color-ink: #050110;
-  --color-cream: #f6f3f0;
+  /* Base — dark aurora stage (warm terracotta / clay, medium-dark) */
+  --color-void: #14100b;
+  --color-ink: #1a140d;
+  --color-cream: #faf5ee;
 
   /* Text tints (warm off-white on dark) */
-  --color-fg: rgba(246, 243, 240, 0.88);
-  --color-fg-muted: rgba(246, 243, 240, 0.55);
-  --color-fg-faint: rgba(246, 243, 240, 0.38);
+  --color-fg: rgba(250, 245, 238, 0.88);
+  --color-fg-muted: rgba(250, 245, 238, 0.55);
+  --color-fg-faint: rgba(250, 245, 238, 0.38);
 
   /* Glass surfaces */
-  --color-glass: rgba(246, 243, 240, 0.06);
-  --color-glass-strong: rgba(246, 243, 240, 0.1);
-  --color-hairline: rgba(246, 243, 240, 0.14);
+  --color-glass: rgba(250, 245, 238, 0.06);
+  --color-glass-strong: rgba(250, 245, 238, 0.1);
+  --color-hairline: rgba(250, 245, 238, 0.14);
 
-  /* Aurora accents */
-  --color-aurora-blue: #2b2fe0;
-  --color-aurora-violet: #7c3aed;
-  --color-aurora-magenta: #c026d3;
-  --color-aurora-rose: #d6236a;
-  --color-aurora-crimson: #7a0b2e;
+  /* Aurora accents — warm terracotta / clay (terra / ochre / sand / brick / deep) */
+  --color-aurora-blue: #4a2410;
+  --color-aurora-violet: #7c3a1d;
+  --color-aurora-magenta: #ca8a04;
+  --color-aurora-rose: #c2542f;
+  --color-aurora-crimson: #d6a35c;
+
+  /* UI accent — wishlist heart + notification badge. A warm brick-red that
+     pops off the terracotta background (kept separate from the bg blooms). */
+  --color-accent: #e0533d;
 
   --font-serif: var(--font-playfair), Georgia, serif;
   --font-sans: var(--font-inter), "system-ui", sans-serif;
@@ -57,6 +61,10 @@
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes shimmer {
+  0% { background-position: -150% 0; }
+  100% { background-position: 150% 0; }
+}
 
 html {
   background: var(--color-void);
@@ -90,8 +98,24 @@ body {
 .glass {
   background: var(--color-glass);
   border: 1px solid var(--color-hairline);
-  backdrop-filter: blur(18px) saturate(1.2);
-  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+/* Stronger frosted glass for the sticky navbar so overlapped content
+   is heavily diffused (matches jackwatkins.co header). Blur is applied
+   via Tailwind's backdrop-blur utilities on the element (see Navbar) —
+   Lightning CSS prunes hand-written `backdrop-filter` from this file. */
+.glass-nav {
+  background: rgba(28, 20, 12, 0.22);
+  border: 1px solid var(--color-hairline);
+}
+
+/* Restore frosted blur that Lightning CSS strips from bare declarations.
+   Guarding in @supports keeps the property in the compiled output. */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass {
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  }
 }
 
 .tracked {
@@ -99,8 +123,21 @@ body {
   text-transform: uppercase;
 }
 
+/* Shimmer placeholder shown while a showcase image decodes */
+.skeleton {
+  background: linear-gradient(
+    100deg,
+    var(--color-glass) 30%,
+    var(--color-glass-strong) 50%,
+    var(--color-glass) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   [class*="drift"], .animate-rise { animation: none !important; }
+  .skeleton { animation: none; }
 }
 
 ::selection {
@@ -109,3 +146,19 @@ body {
 }
 
 input[type="search"]::-webkit-search-cancel-button { display: none; }
+
+/* Tailwind v4 Preflight drops the default button cursor — restore it project-wide */
+button:not(:disabled),
+select:not(:disabled),
+[role="button"]:not(:disabled),
+label[for] {
+  cursor: pointer;
+}
+
+/* Hide native number-input spin buttons — they don't match the dark theme */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] { -moz-appearance: textfield; }

@@ -337,10 +337,9 @@ function applyFilters(base: Item[], filters: ItemFilters): Item[] {
 }
 
 export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
-  return applyFilters(
-    items.filter((item) => !item.isSold),
-    filters,
-  );
+  // Sold items stay in the public catalog (shown with a "Sold out" tag), so the
+  // public list now matches the admin list.
+  return applyFilters([...items], filters);
 }
 
 // Admin view: includes sold items so they can still be managed.

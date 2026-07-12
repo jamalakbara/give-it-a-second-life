@@ -13,6 +13,7 @@ export function ItemCard({ item }: { item: Item }) {
         cover={cover}
         title={item.title}
         itemId={item.id}
+        isSold={item.isSold}
       />
 
       <div className="mt-4">

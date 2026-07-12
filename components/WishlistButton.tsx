@@ -1,7 +1,7 @@
 "use client";
 
 import { useWishlist } from "@/hooks/useWishlist";
-import { HeartIcon } from "@/components/icons";
+import { StarIcon } from "@/components/icons";
 
 export function WishlistButton({
   itemId,
@@ -26,10 +26,10 @@ export function WishlistButton({
       aria-label={active ? "Remove from wishlist" : "Add to wishlist"}
       aria-pressed={active}
       className={`flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-110 hover:text-fg focus-visible:outline-none ${
-        active ? "text-aurora-rose" : "text-fg-muted"
+        active ? "text-accent" : "text-fg-muted"
       } ${className}`}
     >
-      <HeartIcon filled={active} className={iconClassName} />
+      <StarIcon filled={active} className={iconClassName} />
     </button>
   );
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
-import { Aurora } from "@/components/Aurora";
+import { AuroraGL } from "@/components/AuroraGL";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
@@ -37,7 +37,7 @@ export default function RootLayout({
       className={`${playfair.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full p-2 md:p-2.5">
-        <Aurora />
+        <AuroraGL />
         <div className="stage relative z-10 flex min-h-[calc(100vh-20px)] flex-col">
           <Navbar />
           <main className="flex-1">{children}</main>

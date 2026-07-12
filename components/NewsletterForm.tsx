@@ -54,7 +54,7 @@ export function NewsletterForm() {
         <button
           type="submit"
           disabled={status === "loading"}
-          className="tracked shrink-0 rounded-full bg-cream px-5 py-2.5 text-[11px] text-void transition hover:bg-white disabled:opacity-50"
+          className="tracked shrink-0 cursor-pointer rounded-full bg-cream px-5 py-2.5 text-[11px] text-void transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           {status === "loading" ? "…" : "Subscribe"}
         </button>
@@ -62,7 +62,7 @@ export function NewsletterForm() {
       <p
         aria-live="polite"
         className={`mt-3 min-h-5 text-[12px] ${
-          status === "error" ? "text-aurora-rose" : "text-fg-muted"
+          status === "error" ? "text-accent" : "text-fg-muted"
         }`}
       >
         {status === "success" || status === "error" ? message : ""}

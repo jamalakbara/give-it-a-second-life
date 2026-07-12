@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useWishlist } from "@/hooks/useWishlist";
-import { HeartIcon, SearchIcon, MenuIcon, CloseIcon } from "@/components/icons";
+import { StarIcon, SearchIcon, MenuIcon, CloseIcon } from "@/components/icons";
 
 const NAV_LINKS = [
   { href: "/", label: "Gallery" },
@@ -50,7 +50,7 @@ function NavbarInner() {
 
   return (
     <div className="sticky top-0 z-50 px-3 pt-3 md:px-6 md:pt-5">
-      <header className="glass mx-auto flex h-14 max-w-[1240px] items-center justify-between gap-4 rounded-full px-4 md:h-16 md:px-7 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]">
+      <header className="glass-nav backdrop-blur-sm backdrop-saturate-150 mx-auto flex h-14 max-w-[1240px] items-center justify-between gap-4 rounded-full px-4 md:h-16 md:px-7 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]">
         <Link
           href="/"
           className="font-serif text-[19px] font-medium tracking-tight text-fg md:text-[22px]"
@@ -81,16 +81,16 @@ function NavbarInner() {
             aria-label={`Wishlist (${count} items)`}
             className="relative p-2 text-fg-muted transition-colors duration-200 hover:text-fg"
           >
-            <HeartIcon className="size-5" />
+            <StarIcon className="size-5" />
             {count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-aurora-rose text-[10px] font-semibold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-semibold text-white">
                 {count}
               </span>
             )}
           </Link>
           <button
             type="button"
-            className="p-2 text-fg-muted md:hidden"
+            className="cursor-pointer p-2 text-fg-muted md:hidden"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((open) => !open)}
@@ -101,7 +101,7 @@ function NavbarInner() {
       </header>
 
       {menuOpen && (
-        <div className="glass mx-auto mt-2 max-w-[1240px] rounded-3xl p-5 md:hidden">
+        <div className="glass-nav backdrop-blur-sm backdrop-saturate-150 mx-auto mt-2 max-w-[1240px] rounded-3xl p-5 md:hidden">
           <div className="mb-4">
             <SearchField onDone={() => setMenuOpen(false)} />
           </div>

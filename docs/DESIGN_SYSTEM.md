@@ -2,7 +2,17 @@
 
 **Design Reference:** jackwatkins.co/works (live, inspected July 2026)
 **Aesthetic:** Dark "living gallery" — near-black stage, drifting aurora glow, high-contrast serif display, glassmorphic UI, large staggered imagery
-**Status:** MVP Design System — v2.3 (adds drag-and-drop image uploader with reorderable thumbnails + cover badge, and drag-to-reorder admin product list)
+**Status:** MVP Design System — v2.11 (wishlist icon changed from heart → 5-point star, `StarIcon` in `components/icons.tsx`)
+
+> **Note (v2.11):** The wishlist control icon changed from a **heart to a 5-point star** (`StarIcon`, `components/icons.tsx`) — a "favorite"/collect metaphor. Same `filled`-on-active behavior, same `--color-accent` color, same glass circle + count badge; only the glyph changed. Text below that says "heart" refers to this same star control.
+
+> **Note (v2.10):** The wishlist star / notification badge / error text moved off the reused `aurora-rose` bloom onto a dedicated **`--color-accent` (#e0533d warm brick-red)** so the accent pops off the terracotta background instead of blending in. Aurora tokens are now background-glow only.
+
+> **Note (v2.9):** The background palette shifted from the cool night-sky to a **warm terracotta / clay** set (medium-dark warm brown-black base `#14100b`, terracotta / ochre / sand / brick / deep-umber blooms) across both the WebGL mesh-gradient and the CSS fallback; text tints returned to warm off-white. Shader pixel cap (`maxPixelCount 800k`) documented in §2.1.
+
+> **Note (v2.8):** The admin image input moved into a **modal media picker** (`components/MediaPicker.tsx`) opened by a single **+ Add images** button. It has two tabs — **Gallery** (selectable grid of images already uploaded to Cloudinary) and **Upload** (the previous drag-drop dropzone) — establishing the app's first reusable **modal + tab + selectable-grid** pattern (see §2.6).
+
+> **Note (v2.7):** The background became a **WebGL fluid mesh-gradient** (`@paper-design/shaders-react` `<MeshGradient>`, `components/AuroraGL.tsx`), and the whole palette shifted from warm magenta/rose to a cool **indigo/blue/cyan/mint/teal night-sky**. The static CSS aurora (`components/Aurora.tsx`) is retained as the SSR / reduced-motion / no-WebGL fallback.
 
 > **Note (v2.0):** The original v1.0 spec described a *light* cream/charcoal/gold adaptation. The live reference is a **dark aurora** portfolio, so the system was rebuilt to match it pixel-for-pixel. Tokens below reflect what is actually implemented in `app/globals.css` (Tailwind v4 `@theme`).
 >
@@ -18,39 +28,55 @@ All tokens live in `app/globals.css` under `@theme` and are consumed as Tailwind
 
 ### 1.1 Color Palette
 
-#### Base (dark stage)
+#### Base (dark stage — warm terracotta / clay, medium-dark)
 ```
-Void   #010008   — app background (matches reference body rgb(1,0,8))
-Ink    #050110   — darkened content sections (the .veil overlay target)
-Cream  #f6f3f0   — light surface for solid CTAs & light text on dark
+Void   #14100b   — app background (warm brown-black, slightly lifted)
+Ink    #1a140d   — darkened content sections (the .veil overlay target)
+Cream  #faf5ee   — light surface for solid CTAs & light text on dark
 ```
 
 #### Foreground (warm off-white on dark)
 ```
-fg        rgba(246,243,240,0.88)  — primary text / headings
-fg-muted  rgba(246,243,240,0.55)  — body copy, secondary
-fg-faint  rgba(246,243,240,0.38)  — eyebrows, captions, meta labels
+fg        rgba(250,245,238,0.88)  — primary text / headings
+fg-muted  rgba(250,245,238,0.55)  — body copy, secondary
+fg-faint  rgba(250,245,238,0.38)  — eyebrows, captions, meta labels
 ```
 
 #### Glass surfaces (frosted translucency)
 ```
-glass         rgba(246,243,240,0.06)  — pills, cards, chips
-glass-strong  rgba(246,243,240,0.10)  — hover state
-hairline      rgba(246,243,240,0.14)  — borders / dividers / rings
+glass         rgba(250,245,238,0.06)  — pills, cards, chips
+glass-strong  rgba(250,245,238,0.10)  — hover state
+hairline      rgba(250,245,238,0.14)  — borders / dividers / rings
 ```
 Applied via the `.glass` utility = translucent fill + hairline border + `backdrop-filter: blur(18px) saturate(1.2)`.
 
+The **sticky navbar** uses a stronger `.glass-nav` variant so overlapped content reads as a heavy frosted veil (matches jackwatkins.co header): light dark warm fill `rgba(28,20,12,0.22)` + hairline border + `backdrop-blur-sm backdrop-saturate-150` (≈`blur(8px)`). Subtle tint + faint frost so overlapped card images / aurora stay clearly visible, just gently glazed — a real-glass sheen, not an opaque veil.
+
+> **Build gotcha:** Lightning CSS (Tailwind v4) **prunes hand-written `backdrop-filter`** from `globals.css`, silently killing the frosted effect. Two workarounds are in use: `.glass` wraps its `backdrop-filter` in an `@supports (backdrop-filter: ...)` block (survives pruning); `.glass-nav` gets its blur from Tailwind's own `backdrop-blur-*` / `backdrop-saturate-*` utilities on the element (Navbar). Do **not** put a bare `backdrop-filter` in `globals.css` — it will vanish at build time.
+
 #### Aurora accents (background glow only — not UI color)
 ```
-aurora-blue     #2b2fe0
-aurora-violet   #7c3aed
-aurora-magenta  #c026d3
-aurora-rose     #d6236a
-aurora-crimson  #7a0b2e
+aurora-blue     #4a2410   (deep umber — anchors depth)
+aurora-violet   #7c3a1d   (brick)
+aurora-magenta  #ca8a04   (ochre)
+aurora-rose     #c2542f   (terracotta)
+aurora-crimson  #d6a35c   (sand)
 ```
-Used exclusively by `components/Aurora.tsx` as large blurred blobs. `aurora-rose` doubles as the error/notification accent (e.g. wishlist count badge).
+Feed both the WebGL mesh-gradient (`components/AuroraGL.tsx`) and the CSS-blob fallback
+(`components/Aurora.tsx`) — **background glow only**. These are muted/dark by design, so they
+are no longer reused for UI accents (that made the wishlist star blend into the warm bg).
 
-**No gold.** The v1 gold accent was removed — the reference has no accent color; emphasis comes from contrast (cream-on-void CTAs) and the aurora itself.
+#### UI accent
+```
+accent   #e0533d   — warm brick-red (Tailwind: text-accent / bg-accent)
+```
+The single UI accent — wishlist star (`components/WishlistButton.tsx`), nav notification
+badge (`components/Navbar.tsx`), and error/danger text (admin errors + delete, newsletter,
+media picker). Brighter and more saturated than the terracotta blooms so it pops off the warm
+background and reads clearly as "star / alert."
+
+**No gold.** The v1 gold accent was removed — emphasis comes from contrast (cream-on-void
+CTAs), the aurora, and the single coral accent.
 
 ### 1.2 Typography
 
@@ -102,10 +128,25 @@ Soft, rounded — the opposite of v1's sharp cards. The whole app sits on a **28
 
 ## 2. Signature Elements
 
-### 2.1 Aurora background (`components/Aurora.tsx`)
-Fixed full-viewport layer over `#010008` holding 5 large blurred radial blobs (blue/violet/magenta/rose/crimson, `blur-[110–140px]`, opacity 0.55–0.8), each drifting on a slow independent keyframe (`drift-a/b/c`, 22–32s). A soft radial center-darkening keeps text legible; a faint SVG grain kills banding. Honors `prefers-reduced-motion` (animations disabled).
+### 2.1 Aurora background (`components/AuroraGL.tsx` + `components/Aurora.tsx`)
+**Primary — WebGL fluid mesh-gradient.** `components/AuroraGL.tsx` renders a GPU
+`<MeshGradient>` from `@paper-design/shaders-react` filling a `fixed inset-0 z-0` layer over
+`#14100b`. A flowing composition of colour spots (the warm terracotta palette — terracotta
+`#c2542f`, ochre `#ca8a04`, sand `#d6a35c`, brick `#7c3a1d`, deep-umber `#4a2410`, plus the
+void base to keep depth) drifts with organic distortion. Params: `distortion 0.8`,
+`swirl 0.35`, **`speed 0.18`** (slow = subtle, so product photos stay hero),
+`grainOverlay 0.12`. Rendered pixels are capped (`maxPixelCount 800k`, `minPixelRatio 1`) so
+the fullscreen shader stays cheap on retina/integrated GPUs. The same soft radial
+center-darkening (`rgba(20,16,11,…)`) and SVG grain overlays from the fallback sit on top for
+text legibility + banding control.
 
-**Stacking:** Aurora is `fixed inset-0 z-0`; body background is transparent (so the negative-z trap is avoided) with `html` painting the void base; content sits in `.stage` at `relative z-10`.
+**Fallback — static CSS aurora.** `components/Aurora.tsx`: 5 large blurred radial blobs
+(same tokens, `blur-[120–150px]`, opacity 0.40–0.80) drifting on slow keyframes
+(`drift-a/b/c`, 22–32s). `AuroraGL` renders this instead of the canvas during SSR first
+paint, when `prefers-reduced-motion: reduce`, and where WebGL is unavailable.
+
+**Stacking:** background is `fixed inset-0 z-0`; body background is transparent with `html`
+painting the void base; content sits in `.stage` at `relative z-10`.
 
 ### 2.2 The stage & the veil
 - `.stage` — rounded 28px panel, `isolation: isolate`, holds nav + main + footer. All content is transparent so the aurora blooms through it.
@@ -113,17 +154,19 @@ Fixed full-viewport layer over `#010008` holding 5 large blurred radial blobs (b
 - `.veil` — now a **transparent no-op hook** kept on gallery / detail / wishlist / admin / footer sections. It used to darken lower content to `ink`, which made the background look "mixed" (colorful hero, flat-dark body); that was removed so the fixed aurora reads consistently. Legibility comes from the aurora's own center vignette + centered content columns.
 
 ### 2.3 Navigation — floating glass pill (`components/Navbar.tsx`)
-Sticky, centered, `max-w-1240px`, `rounded-full`, `.glass`, h-14/16. Serif wordmark left; `.tracked` links (Gallery · Wishlist · Sell) center; search field + wishlist heart (with `aurora-rose` count badge) right. Mobile: wordmark + heart + hamburger → glass dropdown panel with search + links.
+Sticky, centered, `max-w-1240px`, `rounded-full`, `.glass-nav` (heavier frost than `.glass`), h-14/16. Serif wordmark left; `.tracked` links (Gallery · Wishlist · Sell) center; search field + wishlist star (with `aurora-rose` count badge) right. Mobile: wordmark + star + hamburger → glass dropdown panel with search + links.
 
 ### 2.4 Item card — living-gallery showcase (`components/ItemCard.tsx` + `components/CardMedia.tsx`)
 Large **portrait 3:4** image, `rounded-6px`, hairline ring. Below image, left-aligned: category eyebrow (`.tracked` fg-faint) · serif title (22px) · row of IDR price + condition glass chip.
 
-**Structure:** `CardMedia` owns the whole hover surface. Hover handlers (enter/leave/move) sit on the **outer** container (so the tilt keeps running even over the heart); inside the tilt layer are three siblings — a full-bleed `<Link>` click-target, the magnetic pill, and the glass wishlist heart (top-right). Heart and image thus **tilt together**, and the `<button>`/`<a>` are siblings (no invalid nesting). The heart is a fixed `size-9` perfect circle (`grid place-items-center`) with a centered icon; hovering it hides the "View Item" pill (an `overHeart` flag) so the two controls never overlap.
+**Structure:** `CardMedia` owns the whole hover surface. Hover handlers (enter/leave/move) sit on the **outer** container (so the tilt keeps running even over the heart); inside the tilt layer are three siblings — a full-bleed `<Link>` click-target, the magnetic pill, and the glass wishlist star (top-right). Heart and image thus **tilt together**, and the `<button>`/`<a>` are siblings (no invalid nesting). The heart is a fixed `size-9` perfect circle (`grid place-items-center`) with a centered icon; hovering it hides the "View Item" pill (an `overHeart` flag) so the two controls never overlap.
 
 **Hover interaction (`CardMedia.tsx`, client) — matched 1:1 to the reference by inspecting its computed styles.** Three layers, no dark overlay / no dim / no zoom:
 1. **3D tilt ("bottle-cap press")** — outer `[perspective:800px]`, inner media div rotates `rotateX/rotateY` from the normalized cursor offset so the point under the pointer recedes and the far side lifts. `MAX_TILT = 2.5°` (reference is a subtle 2–6°; tune this one constant). Eased `transform 0.6s cubic-bezier(0.16,1,0.3,1)`; resets to flat on leave.
-2. **Magnetic "View Item" pill** — a **liquid-glass** pill (`bg-white/15`, `backdrop-filter blur(14px) saturate(1.4)`, `border-white/25`, soft shadow `0 8px 28px -6px rgba(0,0,0,0.55)`, white text, `whitespace-nowrap`) so it reads clearly over any image — brighter than the standard `.glass`. It trails the cursor via `left/top` (`400ms cubic-bezier(0.22,1,0.36,1)`), scales `0.85→1` + fades in on hover, home = center, fades out on leave. Sits above the tilt layer.
+2. **Magnetic "View Item" pill** — a **liquid-glass** pill (`bg-white/15`, `backdrop-filter blur(14px) saturate(1.4)`, `border-white/25`, soft shadow `0 8px 28px -6px rgba(0,0,0,0.55)`, white text, `whitespace-nowrap`) so it reads clearly over any image — brighter than the standard `.glass`. It trails the cursor via a GPU `transform` reading live `--px/--py` vars (`400ms cubic-bezier(0.22,1,0.36,1)`), scales `0.85→1` + fades in on hover, home = center, fades out on leave. The pill center is **clamped** to the card bounds (measured pill half-size + 8px gap) so it never gets clipped by the `overflow-hidden` rounded edge when the cursor rides the border. Sits above the tilt layer.
 3. Image itself is undimmed on hover (reference does not darken).
+
+**Sold-out overlay (`isSold`):** sold items stay in the catalog. When `item.isSold`, `CardMedia` grays the cover slightly (`grayscale-[0.4]`) and lays a non-interactive veil (`inset-0 bg-black/45`, `pointer-events-none` so the card stays clickable) with a **centered "Sold out" tag** — a `.tracked` uppercase pill (`bg-black/45`, `border-white/25`, `backdrop-filter blur(6px)`, white 11px text, same soft shadow as the View Item pill). Sits above the image, below the wishlist star.
 
 **Card shadow:** each card image carries a soft drop shadow `0 26px 55px -22px rgba(0,0,0,0.7)` to lift it off the aurora (matches the reference's subtle card shadow). It rides on the tilt layer, so it shifts naturally with the 3D tilt.
 
@@ -137,12 +180,21 @@ Large **portrait 3:4** image, `rounded-6px`, hairline ring. Below image, left-al
 ### 2.6 Forms (`components/form.tsx`)
 Inputs = `.glass` fill, hairline ring, `rounded-xl`, focus ring `fg-muted`. Labels are small `.tracked`-ish muted caps. Used by admin item form, newsletter (glass pill wrapper), search.
 
-**Image upload (`components/ItemForm.tsx` + `components/SortableImageGrid.tsx`)** — a **drag-and-drop dropzone**: dashed `hairline` border on `.glass`, `rounded-xl`, a circular `↑` glyph badge, "Drag images here or **browse**" (browse in `cream` underline), and a `.tracked` "PNG, JPG · multiple allowed" hint. It highlights (`border-cream/60 bg-cream/5`, badge scales) while a file is dragged over it, and clicking anywhere opens a hidden `<input type="file" multiple>`. Files upload directly to Cloudinary via a signed request (`POST /api/upload`). Uploaded thumbnails render in a **drag-to-reorder** 3–4 col grid (`@dnd-kit` sortable, `rounded-[6px]`, hairline ring): the first tile shows a cream **"Cover"** chip (`bg-cream text-void`), each has a hover ✕ (hovers to `aurora-rose/80`), and in-flight uploads show `animate-pulse` glass placeholder tiles. Uploads are disabled when Cloudinary env vars are absent.
+**Native control overrides** — browser chrome is stripped so nothing clashes with the dark theme:
+- **`Select`** — `appearance-none` with a custom inline-SVG chevron absolutely positioned `right-4` (inset from the edge), `pr-11` so text never overlaps it. Chevron is `fg-muted`, `h-4 w-4`. Option list forced dark via `[&>option]:bg-ink [&>option]:text-fg`.
+- **Number inputs** — native spin buttons hidden globally in `app/globals.css` (`::-webkit-inner/outer-spin-button` + Firefox `-moz-appearance: textfield`).
+- **Checkbox** — custom `appearance-none` box (`h-[18px]`, `rounded-[5px]`, `.glass` + hairline ring); checked = solid `cream` fill/ring with an `ink` SVG check that fades in via `peer-checked`. Replaces the old `accent-cream` native checkbox.
+
+**Image input (`components/ItemForm.tsx` + `components/SortableImageGrid.tsx`)** — added images render in a **drag-to-reorder** 3–4 col grid (`@dnd-kit` sortable, `rounded-[6px]`, hairline ring): the first tile shows a cream **"Cover"** chip (`bg-cream text-void`), every tile shows a bottom-left **position badge** (1-based index, `bg-black/60` backdrop-blur pill) mirroring display order, each has a hover ✕ (hovers to `aurora-rose/80`). Below the grid a single dashed-`hairline` `.glass` `rounded-xl` **+ Add images** button (circular `+` glyph badge, "Add images from **gallery** or upload") opens the media picker modal.
+
+**Media picker modal (`components/MediaPicker.tsx`)** — the app's reusable **modal + tab + selectable-grid** pattern. A fixed `z-[60]` overlay with a `bg-void/80 backdrop-blur-xl` veil centers a `.glass` `rounded-[12px]` hairline-ring panel (`max-w-2xl`, `max-h-[85vh]`, column layout with scrollable body). Closes on Esc, backdrop click, or the header ✕; body scroll locks while open (matches the §2.7.1 lightbox conventions). A pill **tab switch** (`.glass` track, active tab = `bg-cream text-void`, `.tracked` uppercase labels) toggles two panes:
+- **Gallery** — 3–4 col grid of images already uploaded to Cloudinary (fetched from `GET /api/media`, newest-first, "Load more" pagination). While the first page loads it shows a grid of 8 **`.skeleton`** shimmer tiles (`aspect-square rounded-[6px]`) rather than a text spinner. Tap a tile to select (`ring-2 ring-cream` + cream ✓ badge); images already on the item are `opacity-40`, disabled, and tagged **"Added"**. Footer shows the selection count + a cream **Add N images** button.
+- **Upload** — the **drag-and-drop dropzone**: dashed `hairline` border on `.glass`, circular `↑` glyph badge, "Drag images here or **browse**" (browse in `cream` underline), `.tracked` hint; highlights (`border-cream/60 bg-cream/5`, badge scales) on drag-over; clicking opens a hidden `<input type="file" multiple>`. Files upload directly to Cloudinary via a signed request (`POST /api/upload`) and are added to the item instantly; in-flight uploads show `animate-pulse` glass placeholder tiles each with a **spinner** (`animate-spin` ring). Footer shows a **Done** button.
 
 **Edit mode (`components/ItemForm.tsx`)** — the same form is dual-mode. Given an `item`
 prop it prefills every field + the existing thumbnails, swaps the submit label to **Save
 Changes**, adds a glass **Cancel** button (`variant="secondary"`) beside it, and shows a
-**Mark as sold** checkbox (`accent-cream`) that hides the item from the public catalog.
+**Mark as sold** custom themed checkbox (see native-control overrides above); a sold item stays in the public catalog with a **Sold out** overlay on its card (see Item card below).
 Create mode is unchanged.
 
 **Admin item list (`components/AdminItemList.tsx`)** — below the create card on `/admin`.
@@ -159,6 +211,11 @@ shadow. The grip is disabled while that row's edit form is open.
 ### 2.7 Item detail (`app/items/[id]/page.tsx`)
 `.veil` section, 55/45 two-column (image gallery left, info right; stacked on mobile). Info: category eyebrow → serif `text-h2` title → 26px IDR price + condition chip → muted description → spec list (tracked labels) → cream WhatsApp pill + glass wishlist button → seller block (Akbar). Product JSON-LD retained.
 
+### 2.7.1 Image showcase — carousel + lightbox + skeleton (`components/ImageGallery.tsx`)
+- **Carousel arrows** — prev/next buttons overlaid on the main `aspect-[3/4]` frame (only when >1 image), vertically centered at `left-3` / `right-3`. Button style = `.glass grid size-10 place-items-center rounded-full text-fg backdrop-blur transition hover:text-cream hover:ring-1 hover:ring-cream` with an inline chevron SVG (no icon dep). Navigation wraps modulo image count. The thumbnail strip (`size-[76px]`, active `ring-2 ring-cream`) stays below and stays in sync.
+- **Loading skeleton** — a `.skeleton` overlay (shimmer gradient of `--color-glass`→`--color-glass-strong`, `shimmer` keyframe, 1.4s) covers the frame while the active image decodes; the `next/image` fades in (`opacity-0`→`opacity-100`, `duration-500`) on `onLoad`. `loaded` resets to `false` on every image change so switching photos always shows the shimmer, never a blank/stale pop. Image is keyed by `url` to force a fresh `onLoad`. Disabled under `prefers-reduced-motion`.
+- **Lightbox** — clicking the main image (`cursor-zoom-in`) opens a fixed full-screen overlay (`z-[60]`, backdrop `bg-void/80 backdrop-blur-xl`). Contained large image uses `object-contain`, same skeleton-on-load pattern. Themed prev/next arrows + a top-right glass close button (X SVG), plus a `size-[64px]` thumbnail row along the bottom. Closes on Esc, click-outside, or X; `←`/`→` navigate; body scroll locks while open.
+
 ---
 
 ## 3. Responsive Breakpoints
@@ -174,20 +231,24 @@ Hero and headings scale fluidly via `clamp()`, so there are no per-breakpoint fo
 
 ## 4. Motion
 ```
-Aurora drift    : 22–32s ease-in-out, infinite, independent per blob
+Aurora (primary) : WebGL mesh-gradient, speed 0.18 (slow/subtle) — components/AuroraGL.tsx
+Aurora (fallback): CSS blobs drift 22–32s ease-in-out, infinite, independent per blob
 Card 3D tilt    : transform 0.6s cubic-bezier(0.16,1,0.3,1)   (perspective 800px)
 Card pill trail : left/top 400ms cubic-bezier(0.22,1,0.36,1) + opacity 300ms
 Hero entrance   : `rise` 0.9s (fade + 24px up)
-Reduced-motion  : all drift/rise disabled
+Reduced-motion  : shader replaced by static CSS aurora; all drift/rise disabled
 ```
-Easing token: `--ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1)`. No animation library — the card tilt/pill are plain CSS transforms + transitions driven by React state (matches how the reference does it; GSAP/Framer/WebGL not used).
+Easing token: `--ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1)`. The background is the one
+GPU/WebGL element (`@paper-design/shaders-react`); everything else (card tilt/pill, hero
+rise) is plain CSS transforms + transitions driven by React state — no GSAP/Framer.
 
 ---
 
 ## 5. Accessibility
-- Text is warm off-white at 0.88 alpha on `#010008` → high contrast (AAA for body).
+- Text is warm off-white at 0.88 alpha on `#14100b` → high contrast (AAA for body).
 - Focus: visible rings on inputs; interactive glass elements use `outline`/ring on focus.
 - Touch targets ≥ 44px (nav, buttons, chips).
+- `cursor: pointer` restored globally on `button`/`select`/`[role="button"]`/`label[for]` (Tailwind v4 Preflight drops it) — see `app/globals.css`.
 - `prefers-reduced-motion` fully respected.
 - All images carry alt text; decorative aurora is `aria-hidden`.
 
@@ -195,8 +256,9 @@ Easing token: `--ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1)`. No animation li
 
 ## 6. Implementation Map
 ```
-app/globals.css        → tokens (@theme), .stage, .veil, .glass, .tracked, keyframes
-components/Aurora.tsx   → animated background
+app/globals.css        → tokens (@theme), .stage, .veil, .glass, .glass-nav, .tracked, keyframes
+components/AuroraGL.tsx → WebGL fluid mesh-gradient background (@paper-design/shaders-react); falls back to Aurora.tsx
+components/Aurora.tsx   → static CSS-blob aurora (fallback: SSR / reduced-motion / no-WebGL)
 components/Navbar.tsx   → glass pill nav
 components/ItemCard.tsx → showcase card (meta + wishlist + <CardMedia>)
 components/CardMedia.tsx→ card image + 3D tilt + magnetic cursor-following pill
@@ -204,7 +266,8 @@ components/FilterBar.tsx→ glass filter toolbar
 components/Button.tsx   → cream / glass pill variants
 components/form.tsx     → glass inputs
 components/Badge.tsx    → condition / category chips
-components/ItemForm.tsx → admin create/edit form (dual-mode, drag-drop uploader, sold toggle)
+components/ItemForm.tsx → admin create/edit form (dual-mode, +Add images button, sold toggle)
+components/MediaPicker.tsx → modal picker: Gallery (reuse Cloudinary uploads) + Upload tabs
 components/SortableImageGrid.tsx → drag-to-reorder image thumbnails (@dnd-kit, cover badge)
 components/AdminItemList.tsx → admin item list (drag-reorder rows, sold badge, edit + inline delete confirm)
 app/page.tsx           → hero + staggered gallery

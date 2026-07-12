@@ -60,7 +60,11 @@ The platform will transition to a revenue model once multi-seller functionality 
   - Quick view wishlist page
 
 - **Item Detail View**
-  - Full-resolution images with lightbox/carousel
+  - Image showcase with **prev/next carousel arrows** + thumbnail strip
+  - **Click any image to open a full-screen lightbox** (arrows, thumbnails, keyboard
+    ←/→, Esc/click-outside close)
+  - Shimmer **skeleton** while an image decodes so switching photos never shows a
+    blank/laggy pop
   - Complete item description
   - Condition notes
   - Size/dimensions if applicable
@@ -71,13 +75,19 @@ The platform will transition to a revenue model once multi-seller functionality 
   - Create items (title, price, category, condition, size/color/material, image uploads)
   - **Multi-image upload with reordering** — drag-and-drop uploader; drag thumbnails to
     reorder; the first image is the catalog cover (see TECH_SETUP § 8.4)
+  - **Media gallery picker** — a single **+ Add images** button opens a modal with two
+    tabs: **Gallery** (grid of images already uploaded to Cloudinary, select to reuse
+    without re-uploading) and **Upload** (drag-drop / browse new files). Reuses avoid
+    duplicate uploads; the gallery lists the Cloudinary folder newest-first with
+    pagination (see TECH_SETUP § 9)
   - **Edit** any existing item — update fields and replace its image set
   - **Delete** any existing item — removes it and its images
   - **Reorder products** — drag items in the admin list to set the catalog order; this
     order drives the public gallery's default view (price sort still overrides). Persisted
     via `PATCH /api/items/reorder` (see TECH_SETUP § 8)
-  - **Mark Sold / Available** — a sold item is hidden from the public catalog but stays
-    in the admin list for management (see § 12 inventory)
+  - **Mark Sold / Available** — a sold item stays visible in the public catalog with a
+    centered **Sold out** tag on its card, and remains in the admin list for management
+    (see § 12 inventory)
   - Mutating endpoints (`POST`/`PATCH`/`DELETE`) require the admin secret via the
     `x-admin-password` header (see TECH_SETUP § 4.4)
 
@@ -336,8 +346,8 @@ The platform will transition to a revenue model once multi-seller functionality 
 2. **Returns Policy:** What's the return window and who pays for returns?
 3. **Seller Onboarding:** Verification requirements for multi-seller phase?
 4. **Inventory Management:** Sold items are handled via the admin **Mark Sold** toggle
-   (`is_sold` flag) — hidden from the public catalog, retained in the admin list. Restocks
-   and multi-quantity inventory remain open for a future phase.
+   (`is_sold` flag) — shown in the public catalog with a **Sold out** tag, retained in the
+   admin list. Restocks and multi-quantity inventory remain open for a future phase.
 5. **Commission Timing:** When does the platform collect commission? (Before delivery, after verification?)
 
 ---

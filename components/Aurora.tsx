@@ -18,7 +18,7 @@ export function Aurora() {
       {/* soft violet centre bloom so the middle never goes black */}
       <div className="absolute left-[28%] top-[28%] h-[55vh] w-[46vw] rounded-full bg-aurora-violet opacity-40 blur-[150px] animate-drift-b" />
       {/* light centre darkening for text legibility; colours keep blooming */}
-      <div className="absolute inset-0 bg-[radial-gradient(135%_135%_at_50%_45%,transparent_0,rgba(1,0,8,0.16)_60%,rgba(1,0,8,0.42)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(135%_135%_at_50%_45%,transparent_0,rgba(20,16,11,0.16)_60%,rgba(20,16,11,0.42)_100%)]" />
       {/* fine grain to kill banding */}
       <div className="absolute inset-0 opacity-[0.05] mix-blend-overlay [background-image:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/></svg>')]" />
     </div>

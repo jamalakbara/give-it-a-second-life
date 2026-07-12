@@ -128,7 +128,8 @@ async function queryItems(
 }
 
 export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
-  return queryItems(filters, false);
+  // Sold items stay in the public catalog (shown with a "Sold out" tag).
+  return queryItems(filters, true);
 }
 
 // Admin view: includes sold items so they can still be managed.

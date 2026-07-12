@@ -7,7 +7,7 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { ItemCard } from "@/components/ItemCard";
 
 export default function WishlistPage() {
-  const { ids } = useWishlist();
+  const { ids, remove } = useWishlist();
   const [items, setItems] = useState<Item[] | null>(null);
 
   useEffect(() => {
@@ -24,6 +24,14 @@ export default function WishlistPage() {
       cancelled = true;
     };
   }, []);
+
+  // Prune stale ids (sold/removed items no longer in the catalog) so the
+  // navbar count stays in sync with what's actually shown here.
+  useEffect(() => {
+    if (!items) return;
+    const live = new Set(items.map((item) => item.id));
+    ids.filter((id) => !live.has(id)).forEach(remove);
+  }, [items, ids, remove]);
 
   const saved = items?.filter((item) => ids.includes(item.id)) ?? null;
 

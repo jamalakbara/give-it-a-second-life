@@ -23,7 +23,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
-      className={`tracked rounded-full px-3.5 py-1.5 text-[10px] transition-colors duration-200 ${
+      className={`tracked cursor-pointer rounded-full px-3.5 py-1.5 text-[10px] transition-colors duration-200 ${
         active
           ? "bg-cream text-void"
           : "glass text-fg-muted hover:text-fg"
@@ -87,7 +87,7 @@ export function FilterBar() {
         <button
           type="button"
           onClick={() => setShowConditions((v) => !v)}
-          className="glass tracked rounded-full px-3.5 py-1.5 text-[10px] text-fg-muted transition-colors hover:text-fg"
+          className="glass tracked cursor-pointer rounded-full px-3.5 py-1.5 text-[10px] text-fg-muted transition-colors hover:text-fg"
         >
           Condition {selectedConditions.length ? `(${selectedConditions.length})` : ""}
         </button>
@@ -101,7 +101,7 @@ export function FilterBar() {
             })
           }
           aria-label="Sort"
-          className="glass tracked ml-auto rounded-full px-3.5 py-1.5 text-[10px] text-fg-muted outline-none"
+          className="glass tracked ml-auto cursor-pointer rounded-full px-3.5 py-1.5 text-[10px] text-fg-muted outline-none"
         >
           <option value="newest" className="bg-ink text-fg">Newest</option>
           <option value="price-asc" className="bg-ink text-fg">Price ↑</option>

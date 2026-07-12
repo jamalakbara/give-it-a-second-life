@@ -62,7 +62,7 @@ export default function AdminPage() {
                 placeholder="Enter password"
               />
             </div>
-            {error && <p className="text-[12px] text-aurora-rose">{error}</p>}
+            {error && <p className="text-[12px] text-accent">{error}</p>}
             <Button type="submit" className="w-full">
               Login
             </Button>

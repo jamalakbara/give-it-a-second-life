@@ -153,7 +153,7 @@ export function AdminItemList({ refreshToken = 0 }: { refreshToken?: number }) {
       )}
 
       {error && (
-        <p className="mb-4 text-[13px] text-aurora-rose">{error}</p>
+        <p className="mb-4 text-[13px] text-accent">{error}</p>
       )}
       {isLoading && (
         <p className="text-[13px] text-fg-faint">Loading…</p>
@@ -207,7 +207,7 @@ export function AdminItemList({ refreshToken = 0 }: { refreshToken?: number }) {
                     <span
                       className={`tracked rounded-full px-2 py-0.5 text-[9px] ${
                         item.isSold
-                          ? "bg-aurora-rose/15 text-aurora-rose"
+                          ? "bg-accent/15 text-accent"
                           : "glass text-fg-muted"
                       }`}
                     >
@@ -230,7 +230,7 @@ export function AdminItemList({ refreshToken = 0 }: { refreshToken?: number }) {
                       <button
                         type="button"
                         onClick={() => setConfirmId(null)}
-                        className="tracked text-[10px] text-fg-faint hover:text-fg"
+                        className="tracked cursor-pointer text-[10px] text-fg-faint hover:text-fg"
                       >
                         Cancel
                       </button>
@@ -242,14 +242,14 @@ export function AdminItemList({ refreshToken = 0 }: { refreshToken?: number }) {
                         onClick={() =>
                           setEditingId(isEditing ? null : item.id)
                         }
-                        className="tracked text-[10px] text-fg-muted transition-colors hover:text-fg"
+                        className="tracked cursor-pointer text-[10px] text-fg-muted transition-colors hover:text-fg"
                       >
                         {isEditing ? "Close" : "Edit"}
                       </button>
                       <button
                         type="button"
                         onClick={() => setConfirmId(item.id)}
-                        className="tracked text-[10px] text-aurora-rose/80 transition-colors hover:text-aurora-rose"
+                        className="tracked cursor-pointer text-[10px] text-accent/80 transition-colors hover:text-accent"
                       >
                         Delete
                       </button>

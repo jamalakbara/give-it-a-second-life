@@ -800,6 +800,46 @@ image is the catalog cover.
 
 ---
 
+## Part 9: Media Gallery Picker
+
+Lets the admin reuse an image already uploaded to Cloudinary instead of always
+uploading a fresh copy. A single **+ Add images** button in `ItemForm` opens the
+`MediaPicker` modal (`components/MediaPicker.tsx`) with two tabs:
+
+- **Gallery** — grid of images already in the Cloudinary folder; tap to select, then
+  **Add N images**. Images already on the item are shown disabled ("Added").
+- **Upload** — the existing direct-to-Cloudinary drag-drop / browse flow (moved out of
+  `ItemForm`); newly uploaded URLs are added to the item immediately.
+
+The picker hands URLs back via `onAdd`; `ItemForm.addUrls()` appends them and
+**dedupes** against the current `imageUrls`. Ordering/cover/remove still come from
+`SortableImageGrid` — no change to how images are stored (`item_images`).
+
+### 9.1 `GET /api/media`
+
+Create `app/api/media/route.ts`:
+
+- **Auth:** admin secret via `x-admin-password` (same `isAuthorized` as mutating routes);
+  `401` if missing. The Cloudinary **Admin** API needs the API secret, so this listing
+  must be server-side and admin-gated.
+- **Config:** reuses existing env — `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`,
+  `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_UPLOAD_FOLDER` (default
+  `preloved`). Returns `501` when unconfigured (mirrors `/api/upload`).
+- **Upstream:** `POST https://api.cloudinary.com/v1_1/{cloud}/resources/search` with
+  `Authorization: Basic base64(apiKey:apiSecret)` and body
+  `{ expression: "folder:{folder}", sort_by: [{ created_at: "desc" }], max_results: 100, next_cursor? }`.
+  Newest-first ordering via the Search API.
+- **Query:** optional `?cursor=` → passed as `next_cursor` for "Load more".
+- **Response:** trimmed shape (no keys/secrets):
+  `{ images: [{ url, publicId, width, height }], nextCursor: string | null }`.
+  `502` if the upstream call fails.
+
+| Method / route     | Auth | Purpose                                                        |
+| ------------------ | ---- | ------------------------------------------------------------- |
+| `GET /api/media`   | yes  | List Cloudinary folder images (newest-first, cursor paginated) |
+
+---
+
 ## Quick Start Checklist (MVP)
 
 - [ ] Create Neon account & database
