@@ -4,29 +4,33 @@ import { getItemCount, getItems } from "@/lib/data/items";
 import { parseFilters } from "@/lib/filters";
 import type { ItemFilters } from "@/lib/types";
 import { canonical } from "@/lib/seo";
+import { getContent } from "@/lib/data/siteContent";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemGrid } from "@/components/ItemGrid";
 
 const PAGE_SIZE = 8;
 
-export const metadata: Metadata = {
-  title: "Gallery",
-  description:
-    "Browse the full gallery of curated preloved pieces — clothing, tech, homeware, accessories, and more. Filter by category and condition, or search for something specific.",
-  alternates: { canonical: "/gallery" },
-  openGraph: {
-    title: "Gallery | Give It the Second Life",
-    description:
-      "Browse curated preloved clothing, tech, homeware, and more. Every piece with a story.",
-    url: "/gallery",
-    type: "website",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { seo } = await getContent();
+  const s = seo.gallery;
+  return {
+    title: s.title,
+    description: s.description,
+    alternates: { canonical: "/gallery" },
+    openGraph: {
+      title: `${s.title} | Give It a Second Life`,
+      description: s.description,
+      url: "/gallery",
+      type: "website",
+      ...(s.ogImage ? { images: [{ url: s.ogImage }] } : {}),
+    },
+  };
+}
 
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
-  name: "Gallery | Give It the Second Life",
+  name: "Gallery | Give It a Second Life",
   description:
     "A curated gallery of preloved pieces — clothing, tech, homeware, accessories, and more.",
   url: canonical("/gallery"),

@@ -1,12 +1,12 @@
-# Product Requirements Document: Give It the Second Life
+# Product Requirements Document: Give It a Second Life
 
-**Project:** Give It the Second Life — Preloved Items Platform  
+**Project:** Give It a Second Life — Preloved Items Platform  
 **Version:** 1.1  
 **Date:** July 2026  
 **Author:** Akbar  
 
 > **Rebrand (v1.1):** The product was renamed from "Selling Preloved Items" to
-> **"Give It the Second Life"**. Public wordmark is `Second Life°` (navbar/footer).
+> **"Give It a Second Life"**. Public wordmark is `Second Life°` (navbar/footer).
 > All user-facing copy is brand-only — the curator's personal name ("Akbar") was
 > removed from the storefront (About, footer, item detail, JSON-LD `founder`).
 > Akbar remains the internal author/single seller (see `seller_akbar` data id).
@@ -153,6 +153,24 @@ native `<ViewTransition>` — no animation library.
 - Navbar and the aurora background stay anchored (do not move/flicker) during transitions
 - Fully disabled under `prefers-reduced-motion` (instant swap); degrades to a plain swap
   in browsers without View Transitions support
+
+#### 3.6 Admin-Editable Site Content & SEO (MVP)
+The admin can edit the site's high-value marketing copy and per-page SEO from the seller
+studio — no code change or redeploy needed. Backed by a `site_content` store that overrides
+code defaults, so the site always renders even with an empty table.
+- **Editable copy** — Home hero (eyebrow, heading, subheading, CTA, arrivals labels), the
+  About page (hero, mission, "how it works" steps, curator, CTA), and the item page's
+  seller block (label, name, bio). Structural UI (nav labels, buttons, footer copyright,
+  empty states, 404) stays in code — out of scope.
+- **Editable SEO** — per-page meta title, meta description, and Open Graph image for Home,
+  Gallery, and About. Pages read these via `generateMetadata`, falling back to `lib/seo.ts`
+  defaults; the OG image is chosen with the existing Cloudinary media picker.
+- **Dedicated admin chrome** — `/admin` no longer renders the public navbar/newsletter/footer.
+  It has its own slim top bar (brand, Items/Content/SEO tabs, account button); public pages
+  live under an `app/(site)` route group with unchanged URLs.
+- **Acceptance** — edits persist and reflect on the public pages after save (affected routes
+  are revalidated); reads/writes require an admin session (`isAdmin()`); missing rows fall
+  back to defaults.
 
 ### Phase 2 Features (Future Scope)
 - Multi-seller onboarding & authentication (extends the MVP Clerk single-admin setup)
@@ -387,7 +405,7 @@ native `<ViewTransition>` — no animation library.
 - **Tone:** Conversational, Instagram-like voice
 
 ### SEO Strategy
-- Meta titles: "[Brand] [Item] | Preloved [Category] – Give It the Second Life"
+- Meta titles: "[Brand] [Item] | Preloved [Category] – Give It a Second Life"
 - Meta descriptions: Include condition, size, price, brand
 - Alt text for all images
 - Structured data per page type: `Product` on item pages; `CollectionPage` on `/gallery`;

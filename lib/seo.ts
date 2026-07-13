@@ -2,7 +2,7 @@
 // Absolute URLs come from NEXT_PUBLIC_SITE_URL (falls back to localhost in dev).
 // Used by app/layout metadata, sitemap, robots, and page-level JSON-LD.
 
-export const SITE_NAME = "Give It the Second Life";
+export const SITE_NAME = "Give It a Second Life";
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const SITE_DESCRIPTION =

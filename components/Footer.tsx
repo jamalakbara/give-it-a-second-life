@@ -8,7 +8,7 @@ export function Footer() {
         <NewsletterForm />
         <div className="mt-20 flex flex-col items-center gap-5 border-t border-hairline pt-10 text-center">
           <p className="font-logo text-[20px] font-medium text-fg">
-            Second Life&deg;
+            Give It a Second Life&deg;
           </p>
           <nav className="flex gap-7" aria-label="Footer">
             {[
@@ -28,8 +28,8 @@ export function Footer() {
             ))}
           </nav>
           <p className="text-[11px] text-fg-faint">
-            © {new Date().getFullYear()} Give It the Second Life — curated with
-            care. Every good thing deserves another chapter.
+            © {new Date().getFullYear()} — curated with care. Every good thing
+            deserves another chapter.
           </p>
         </div>
       </div>

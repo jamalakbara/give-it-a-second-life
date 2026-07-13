@@ -37,6 +37,15 @@ CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Admin-editable site copy + SEO. One row per top-level content key
+-- (home / about / item / seo). The value column holds the partial override blob
+-- that is merged onto the code defaults (see lib/content/defaults.ts).
+CREATE TABLE IF NOT EXISTS site_content (
+  key         TEXT PRIMARY KEY,
+  value       JSONB NOT NULL,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE INDEX IF NOT EXISTS idx_items_created_at ON items (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_items_sort_order ON items (sort_order ASC);
 CREATE INDEX IF NOT EXISTS idx_items_category ON items (category);

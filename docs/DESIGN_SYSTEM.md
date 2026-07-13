@@ -1,8 +1,36 @@
-# Design System: Give It the Second Life
+# Design System: Give It a Second Life
 
 **Design Reference:** jackwatkins.co/works (live, inspected July 2026)
 **Aesthetic:** Dark "living gallery" — near-black stage, drifting aurora glow, high-contrast serif display, glassmorphic UI, large staggered imagery
-**Status:** MVP Design System — v2.23 (logotype font reverted Telma → Kola)
+**Status:** MVP Design System — v2.26 (slimmer, centered admin top bar)
+
+> **Note (v2.26):** The admin top bar is now **narrower than the public navbar** and its tabs
+> are **truly centered**. Width capped at `max-w-[760px]` (from `1240px`) so the pill hugs its
+> sparse content (wordmark · 3 tabs · avatar) instead of stretching edge-to-edge. It uses a
+> 3-column grid (`grid-cols-[1fr_auto_1fr]`) so the equal `1fr` side columns pin the wordmark
+> left and `<UserButton>` right while the tab nav sits in the auto middle column — dead center
+> regardless of their widths. Height matches the public navbar (`h-14`/`md:h-16`). The SEO
+> panel's **Open Graph image** field now reuses the item form's dashed **dropzone** (`+` tile,
+> "Add/Replace image from gallery or upload") with a preview thumbnail + hover-✕ above it —
+> consistent with `ItemForm`'s image picker instead of the old "Choose image" button.
+
+> **Note (v2.25):** `/admin` now has its **own chrome** and no longer inherits the public
+> navbar / newsletter / footer. Public pages moved under an `app/(site)` route group whose
+> layout (`app/(site)/layout.tsx`) owns `<Navbar/>` + `<Footer/>`; `/admin` sits outside it
+> with a slim top bar (`app/admin/layout.tsx`) — a `.glass-nav` pill, holding the
+> `Second Life°` wordmark, **Items · Content · SEO** tabs
+> (`components/AdminTabs.tsx`, driven by `?tab=`), and the Clerk `<UserButton>`. The studio
+> body gains **Content** and **SEO** panels (`AdminContentPanel`, `AdminSeoPanel`) that reuse
+> the existing `form.tsx` fields, `.glass rounded-3xl` cards, cream/glass `Button`s, and the
+> `MediaPicker` (for the OG image) — no new tokens. See §2.11.
+
+> **Note (v2.24):** The **navbar** keeps the short `Second Life°` wordmark, but the **footer
+> wordmark** is now the **full brand title `Give It a Second Life°`** (its natural signature
+> spot) — so the footer copyright line drops the redundant name (now `© YEAR — curated with
+> care…`). The **About hero H1** is likewise the full title `Give It a Second Life`, with
+> "Why preloved" demoted to the `.tracked` kicker (keeps the `preloved` keyword above the fold).
+> This supersedes the v2.16 note's "navbar/**footer** wordmark = short form" for the footer only.
+> Text/copy change; no token, layout, or motion change.
 
 > **Note (v2.23):** The **"Second Life°" logotype** reverted back to **Kola** (the v2.21 choice) —
 > the brief Telma experiment (v2.22) is dropped and Telma removed. Headings (Tanker) and body
@@ -26,10 +54,10 @@
 > strip. The section is now a plain `relative py-16` block so the carousel flows with the page
 > and scroll never stalls. Scatter, peek, mask, caption, and dashes are unchanged.
 
-> **Note (v2.16):** Rebrand from "Selling Preloved Items" → **"Give It the Second Life"**.
+> **Note (v2.16):** Rebrand from "Selling Preloved Items" → **"Give It a Second Life"**.
 > The navbar/footer **wordmark** is now the serif text **`Second Life°`** (short form with a
 > trailing degree glyph `&deg;`) — same serif/size/weight as before, text-only (no image asset).
-> Full brand name "Give It the Second Life" is used for the hero eyebrow, page titles, and
+> Full brand name "Give It a Second Life" is used for the hero eyebrow, page titles, and
 > JSON-LD. No token, layout, or motion change.
 
 > **Note (v2.15):** The home **preview strip** "Latest arrivals" is now a **scattered carousel** (`components/ArrivalsCarousel.tsx`) instead of a static grid — matched to the Gucci-Beauty reference. A horizontal **scroll-snap** track of the 6 newest 280px cards where each **fans out** the further its center sits from the track's viewport center: `rotate` up to **±7°**, `translateY` up to **22px** (side cards drop below the centered one), `scale` down to **~0.86**, and `brightness` down to **~0.5**. Cards use `CardMedia`'s **`blendEdges`** treatment (rounder corners + feather vignette + bloom shadow) so they melt into the aurora. The **centered card** is upright, largest and brightest; cards **peek** off both edges (side padding `calc((100% − 300px)/2)`, 300px cards). A **single centered caption** (category · serif title · price · condition chip) shows the **active** card only; below it, **progress dashes** (active = 28px wide `#e0533d`, others 14px hairline, click smooth-scrolls that card to center) and a "Swipe to discover" hint. All per-frame transforms are written to CSS vars (`--rot/--ty/--scale/--dim/--z`) on `requestAnimationFrame` (same pattern as `CardMedia`); React state holds only the active index. **Reuses `CardMedia` unchanged** — its cursor 3D-tilt (`rotateX/Y` inside `perspective:800px`) composes on top of the 2D scatter. **Reduced-motion / SSR:** scatter stays off until after mount and entirely under `prefers-reduced-motion`, degrading to an upright horizontal scroll row. Home-only; gallery masonry (§2.9) is unchanged. See §2.10 + §6.
@@ -303,6 +331,26 @@ The home preview strip is a **Gucci-Beauty-style scattered carousel** (home-only
 - **Reuses `CardMedia` unchanged** — its hover 3D-tilt (`rotateX/Y` in `perspective:800px`) + magnetic pill + wishlist star compose on top of the outer 2D scatter (different transform contexts, no conflict).
 - **Reduced-motion / SSR** — scatter is off until after mount (upright first paint, no flash) and stays off entirely under `prefers-reduced-motion`, degrading to a plain upright horizontal scroll row.
 
+### 2.11 Admin studio chrome (`app/admin/layout.tsx`, `components/AdminTabs.tsx`)
+
+The seller studio is intentionally *not* the storefront. It lives outside the `app/(site)`
+route group, so it inherits none of the public navbar/newsletter/footer.
+
+- **Top bar** — same `.glass-nav` pill + geometry as the public navbar (`sticky top-0`,
+  `h-14 md:h-16`, `max-w-[1240px]`, rounded-full, the `shadow-[0_10px_40px_-20px_…]`
+  drop) so the two chromes feel related. Left: `font-logo` `Second Life°` wordmark (links
+  home to leave the studio). Center: **AdminTabs**. Right: Clerk `<UserButton>`.
+- **Tabs** — `Items · Content · SEO` as `.tracked text-[11px]` links; active = `text-fg`,
+  rest = `text-fg-muted`. They set the `?tab=` query the server page reads (no cross-boundary
+  client state); wrapped in `<Suspense>` because they call `useSearchParams`.
+- **Section switch inside a panel** — Content and SEO panels use **pill sub-tabs**
+  (`rounded-full px-4 py-2 text-[10px]`, active = `bg-cream text-void`, rest =
+  `bg-glass ring-1 ring-hairline`) to pick which page's copy/SEO is being edited.
+- **Forms** — plain stacked `Label` + `TextInput`/`TextArea` (from `form.tsx`) inside a
+  `.glass rounded-3xl p-8` card, a cream primary `Button` to save, and the same red/green
+  inline error/success banners as `ItemForm`. The SEO OG-image field reuses `MediaPicker`
+  with an `h-20 w-32` `SmoothImage` preview.
+
 ---
 
 ## 3. Responsive Breakpoints
@@ -376,14 +424,23 @@ components/ItemForm.tsx → admin create/edit form (dual-mode, +Add images butto
 components/MediaPicker.tsx → modal picker: Gallery (reuse Cloudinary uploads) + Upload tabs
 components/SortableImageGrid.tsx → drag-to-reorder image thumbnails (@dnd-kit, cover badge)
 components/AdminItemList.tsx → admin item list (drag-reorder rows, sold badge, edit + inline delete confirm)
-components/AdminDashboard.tsx → client body of /admin (ItemForm + AdminItemList, refresh state)
+components/AdminDashboard.tsx → client body of /admin — switches Items / Content / SEO panels by `tab` prop
+components/AdminTabs.tsx → studio top-bar section links (Items/Content/SEO) via `?tab=` (§2.11)
+components/AdminContentPanel.tsx → edit Home/About/Item marketing copy (loads GET /api/site-content, PATCH per key)
+components/AdminSeoPanel.tsx → edit per-page title/description/OG image (Home/Gallery/About)
 proxy.ts               → Clerk middleware (clerkMiddleware) — Next 16 proxy convention
 lib/adminAuth.ts       → isAdmin() — Clerk currentUser role check (gates admin API routes)
-app/page.tsx           → home: minimal hero + cream CTA + "Latest arrivals" scattered carousel (§2.10) → /gallery
-app/gallery/page.tsx   → gallery: single-line hero (eyebrow + serif <h1>) + FilterBar + staggered infinite-scroll grid
-app/about/page.tsx     → static About page (hero + mission + 3 glass how-it-works cards + seller intro + CTA); reuses existing tokens only
-app/admin/page.tsx     → Clerk auth guard (server) + <UserButton> + <AdminDashboard>
-app/items/[id]/page.tsx→ detail
+lib/content/defaults.ts → typed SiteContent + DEFAULT_CONTENT (code source of truth / fallback)
+lib/content/merge.ts   → deep-merge stored overrides onto defaults
+lib/data/siteContent.ts → getContent()/updateContent() — Neon/mock swap (mirrors items.ts)
+app/layout.tsx         → root: html/body, ClerkProvider, fonts, AuroraGL only (chrome-agnostic)
+app/(site)/layout.tsx  → public chrome: <Navbar/> + <main> + <Footer/> (wraps all storefront routes)
+app/(site)/page.tsx    → home: minimal hero + cream CTA + "Latest arrivals" carousel (§2.10); copy from getContent()
+app/(site)/gallery/page.tsx → gallery: single-line hero + FilterBar + staggered infinite-scroll grid
+app/(site)/about/page.tsx → About page (hero + mission + 3 glass how-it-works cards + seller intro + CTA); copy from getContent()
+app/admin/layout.tsx   → slim studio chrome (top bar + AdminTabs + UserButton) — §2.11
+app/admin/page.tsx     → Clerk auth guard (server) → <AdminDashboard tab={…}>
+app/(site)/items/[id]/page.tsx → detail; seller block from getContent()
 ```
 
 The About page introduces no new tokens or components — it composes existing ones

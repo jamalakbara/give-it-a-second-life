@@ -3,8 +3,6 @@ import { ClerkProvider } from "@clerk/nextjs";
 import localFont from "next/font/local";
 import "./globals.css";
 import { AuroraGL } from "@/components/AuroraGL";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/seo";
 
 // Self-hosted display face for all headings (font-serif token). Single weight (400).
@@ -35,8 +33,8 @@ const clashDisplay = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Give It the Second Life — a living gallery of preloved treasures",
-    template: "%s | Give It the Second Life",
+    default: "Give It a Second Life — a living gallery of preloved treasures",
+    template: "%s | Give It a Second Life",
   },
   description: SITE_DESCRIPTION,
 };
@@ -59,14 +57,10 @@ export default function RootLayout({
             `root` pseudo-argument from globals.css. */}
         <style>{`::view-transition-group(root),::view-transition-old(root),::view-transition-new(root){animation:none!important}`}</style>
         <AuroraGL />
-        <div className="stage relative z-10 flex min-h-[calc(100vh-20px)] flex-col">
-          <Navbar />
-          {/* Page-transition scope lives in app/template.tsx (a template
-              re-mounts per navigation, which is what fires the enter/exit
-              animations — a layout would persist and never animate). */}
-          <main className="flex-1">{children}</main>
-          <Footer />
-        </div>
+        {/* Chrome (navbar/footer vs. admin top bar) is chosen by the nested
+            layouts: app/(site)/layout.tsx wraps the public pages, app/admin/
+            layout.tsx wraps the seller studio. Root stays chrome-agnostic. */}
+        {children}
       </body>
       </html>
     </ClerkProvider>

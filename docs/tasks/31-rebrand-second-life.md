@@ -1,7 +1,7 @@
-# 31 — Rebrand to "Give It the Second Life"
+# 31 — Rebrand to "Give It a Second Life"
 
 ## Goal
-Rebrand the storefront from "Selling Preloved Items" to **"Give It the Second Life"** —
+Rebrand the storefront from "Selling Preloved Items" to **"Give It a Second Life"** —
 name, wordmark, and all marketing copy — with a `Second Life°` logo and brand-only voice
 (curator's personal name removed).
 

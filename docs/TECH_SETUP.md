@@ -987,6 +987,68 @@ one keyword-bearing `<h1>`, image `alt`s, and that any route add/rename/remove u
 
 ---
 
+## Part 16: Admin-Editable Site Content & SEO
+
+Lets the admin edit marketing copy + per-page SEO from the studio, with code defaults as the
+fallback so the site always renders.
+
+### 16.1 Route-group refactor (admin chrome)
+
+`/admin` no longer inherits the public navbar/newsletter/footer. Public routes moved into an
+`app/(site)/` **route group** (a group adds no path segment, so all URLs are unchanged):
+
+```
+app/
+  layout.tsx            # root: html/body, ClerkProvider, fonts, AuroraGL — no chrome
+  (site)/
+    layout.tsx          # <Navbar/> + <main> + <Footer/>
+    template.tsx        # page-transition scope
+    page.tsx  gallery/  about/  items/[id]/  wishlist/  not-found.tsx
+  admin/
+    layout.tsx          # slim top bar: wordmark + AdminTabs + <UserButton>
+    page.tsx            # Clerk guard → <AdminDashboard tab={searchParams.tab}>
+```
+
+### 16.2 Data model
+
+`site_content` table (see `lib/db/schema.sql`, applied by `npm run db:setup`):
+
+```sql
+CREATE TABLE IF NOT EXISTS site_content (
+  key         TEXT PRIMARY KEY,   -- 'home' | 'about' | 'item' | 'seo'
+  value       JSONB NOT NULL,     -- partial override blob for that key
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+- **`lib/content/defaults.ts`** — `DEFAULT_CONTENT: SiteContent` is the source of truth for
+  shape + fallback (seeded from the previously hardcoded strings).
+- **`lib/content/merge.ts`** — `mergeContent(overrides)` deep-merges stored blobs onto the
+  defaults (objects merge; arrays/primitives replace).
+- **`lib/data/siteContent.ts`** — `getContent()` / `updateContent(key, value)`; Neon/mock
+  swap mirrors `lib/data/items.ts`. The Neon reader tolerates a not-yet-migrated table
+  (returns `{}` → defaults) so a fresh clone builds before `db:setup`.
+
+Pages read `getContent()` in their server components (home hero, about copy, item seller
+block) and in `generateMetadata` (per-page SEO), falling back to `lib/seo.ts` constants.
+
+### 16.3 API
+
+`app/api/site-content/route.ts` — both handlers guarded by `isAdmin()`:
+
+- `GET` → merged `SiteContent` (prefills the admin forms).
+- `PATCH` `{ key, value }` → validates `key ∈ CONTENT_KEYS`, upserts the blob, then
+  `revalidatePath` for the affected routes (`/`, `/about`, `/gallery`, `/items/[id]`).
+
+### 16.4 Admin UI
+
+`AdminDashboard` switches panels by the `tab` prop: **Items** (existing `ItemForm` +
+`AdminItemList`), **Content** (`AdminContentPanel` — Home/About/Item copy), **SEO**
+(`AdminSeoPanel` — per-page title/description + OG image via `MediaPicker`). Tabs live in the
+admin top bar (`AdminTabs`, `?tab=`). Design details in `docs/DESIGN_SYSTEM.md` §2.11.
+
+---
+
 ## Quick Start Checklist (MVP)
 
 - [ ] Create Neon account & database

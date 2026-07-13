@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getItem, getItems } from "@/lib/data/items";
+import { getContent } from "@/lib/data/siteContent";
 import {
   CATEGORY_LABELS,
   CONDITION_LABELS,
@@ -41,6 +42,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ItemDetailPage({ params }: Props) {
   const item = await resolveItem(params);
   if (!item) notFound();
+
+  const { item: seller } = await getContent();
 
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
   const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
@@ -136,14 +139,13 @@ export default async function ItemDetailPage({ params }: Props) {
           </div>
 
           <div className="mt-12 border-t border-hairline pt-7">
-            <p className="tracked text-[10px] text-fg-faint">Seller</p>
+            <p className="tracked text-[10px] text-fg-faint">
+              {seller.sellerLabel}
+            </p>
             <p className="mt-2 font-serif text-[22px] font-medium text-fg">
-              Give It the Second Life
+              {seller.sellerName}
             </p>
-            <p className="mt-1.5 text-[14px] text-fg-muted">
-              Curating and rehoming well-loved pieces so they can live a second
-              life.
-            </p>
+            <p className="mt-1.5 text-[14px] text-fg-muted">{seller.sellerBio}</p>
           </div>
         </div>
       </div>
