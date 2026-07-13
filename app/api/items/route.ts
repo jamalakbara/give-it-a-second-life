@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createItem, getAllItems, getItems } from "@/lib/data/items";
 import { parseFilters } from "@/lib/filters";
-import { isAuthorized } from "@/lib/adminAuth";
+import { isAdmin } from "@/lib/adminAuth";
 import { parseItemInput } from "@/lib/validateItem";
 import type { UpdateItemInput } from "@/lib/types";
 
@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

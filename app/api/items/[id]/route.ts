@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { deleteItem, getItem, updateItem } from "@/lib/data/items";
-import { isAuthorized } from "@/lib/adminAuth";
+import { isAdmin } from "@/lib/adminAuth";
 import { parseItemInput } from "@/lib/validateItem";
 import type { UpdateItemInput } from "@/lib/types";
 
@@ -27,7 +27,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!isAuthorized(req)) {
+  if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -65,7 +65,7 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!isAuthorized(req)) {
+  if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

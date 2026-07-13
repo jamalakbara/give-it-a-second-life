@@ -72,8 +72,9 @@ Create `.env.local` in root:
 # Neon Database
 DATABASE_URL=postgresql://user:password@ep-xxxxx.neon.tech/selling-preloved?sslmode=require
 
-# Admin Panel (MVP only - change this!)
-ADMIN_PASSWORD=your-secret-password-here
+# Admin auth — Clerk (gates /admin + mutating APIs; see Part 7)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+CLERK_SECRET_KEY=sk_test_xxx
 
 # Cloudinary
 NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -273,7 +274,13 @@ export async function GET(
 
 ## Part 4.3: Admin Panel for Item Management (MVP)
 
-### Simple Password-Protected Admin Page
+> **Superseded (see Part 7):** the password gate below has been **replaced by Clerk
+> auth**. `/admin` is now a server component that guards with `auth()` + the `admin`
+> role, and the interactive body lives in `components/AdminDashboard.tsx`. The
+> password-page sample here is kept only as historical context. There is no
+> `NEXT_PUBLIC_ADMIN_PASSWORD` / `x-admin-password` anymore.
+
+### Simple Password-Protected Admin Page (historical — replaced by Clerk)
 
 Create `app/admin/page.tsx`:
 
@@ -608,7 +615,9 @@ export async function POST(req: Request) {
 
 ### Access Admin Panel
 
-Visit `http://localhost:3000/admin` and enter your `ADMIN_PASSWORD` from `.env.local`.
+Visit `http://localhost:3000/admin`. You are redirected to Clerk sign-in; sign in as
+the owner (the Clerk user with `publicMetadata.role = "admin"`) to reach the dashboard.
+See Part 7 for the Clerk setup.
 
 ---
 
@@ -619,12 +628,11 @@ Extends the create-only admin panel so items can be **edited**, **deleted**, and
 
 ### Auth on mutating endpoints
 
-Create/edit/delete are destructive, so the API guards them with a shared secret.
-The client sends the admin password in the `x-admin-password` header; the server
-compares it in `lib/adminAuth.ts` (`isAuthorized(req)`) against
-`ADMIN_PASSWORD ?? NEXT_PUBLIC_ADMIN_PASSWORD`. A missing/wrong header → `401`.
-`GET` endpoints stay public. (This is an MVP stopgap; replace with real auth — e.g.
-Clerk — in Phase 2.)
+Create/edit/delete are destructive, so the API guards them with **Clerk** auth. The
+server calls `isAdmin()` in `lib/adminAuth.ts` (`await currentUser()` →
+`publicMetadata.role === "admin"`); not signed-in-as-admin → `401`. The browser sends
+no auth header — Clerk's same-origin session cookie authenticates the fetch. Public
+`GET` catalog endpoints stay open. See Part 7 for the full auth design.
 
 ### API surface
 
@@ -654,7 +662,7 @@ plus optional `isSold`.
 
 - `components/ItemForm.tsx` is now dual-mode: no `item` prop → create (`POST`);
   with an `item` prop → edit (`PATCH`), prefilled, with a **Mark as sold** checkbox and
-  a Cancel action. Both modes send the `x-admin-password` header.
+  a Cancel action. Both modes rely on the Clerk session cookie (no auth header).
 - `components/AdminItemList.tsx` (new) lists all items (`?includeSold=true`) with a
   thumbnail, price, an Available/Sold badge, and **Edit** (expands an inline `ItemForm`)
   + **Delete** (two-step inline confirm, no browser dialog) actions.
@@ -714,42 +722,44 @@ For MVP, manually upload images via Cloudinary dashboard:
 
 ---
 
-## Part 7: Phase 2 - Add Clerk for Multi-Seller
+## Part 7: Admin Auth with Clerk (implemented)
 
-When you're ready to launch Phase 2 (multi-seller), add Clerk:
+The `/admin` seller dashboard and every mutating API route are gated by **Clerk**.
+This replaced the MVP `NEXT_PUBLIC_ADMIN_PASSWORD` / `x-admin-password` gate. It is
+single-admin (one owner) — multi-seller onboarding remains a later phase.
 
-### 7.1 Setup Clerk
-1. Go to [clerk.com](https://clerk.com)
-2. Create account
-3. Create application
-4. Copy `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`
-5. Add to `.env.local`
-6. Install: `npm install @clerk/nextjs`
+### 7.1 Clerk dashboard prerequisites (manual)
+1. Create an application at [clerk.com](https://clerk.com).
+2. Copy `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` into `.env.local`
+   (and the deploy env). Locally provisioned via the Vercel ↔ Clerk Marketplace
+   integration in production.
+3. On the owner's Clerk user, set **`publicMetadata.role = "admin"`** (Users → the
+   user → Metadata → Public).
+4. Disable public sign-ups (Configure → restrictions / sign-up) so strangers can't
+   self-register. Even if they do, the role check below blocks all admin access.
 
-### 7.2 Wrap App with Clerk Provider
-Edit `app/layout.tsx`:
-```typescript
-import { ClerkProvider } from '@clerk/nextjs';
+### 7.2 Wiring
+- `npm install @clerk/nextjs`.
+- `app/layout.tsx` wraps the tree in `<ClerkProvider>`.
+- `proxy.ts` (Next 16 renamed `middleware` → `proxy`) exports
+  `export default clerkMiddleware()` with the standard matcher. It does **not**
+  blanket-protect routes; authorization is enforced at each resource.
+- `lib/adminAuth.ts` exposes `isAdmin()` — `await currentUser()` then
+  `user?.publicMetadata?.role === "admin"`.
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <ClerkProvider>
-      <html>
-        <body>{children}</body>
-      </html>
-    </ClerkProvider>
-  );
-}
-```
+### 7.3 Enforcement
+- **Page** (`app/admin/page.tsx`, server component): `const { userId, redirectToSignIn }
+  = await auth()`. Signed-out → `redirectToSignIn()` (Clerk hosted sign-in); signed-in
+  non-admin → `redirect("/")`. The interactive body lives in
+  `components/AdminDashboard.tsx` (client), header uses Clerk `<UserButton>`.
+- **API routes** — each returns `401` unless `await isAdmin()`:
+  `POST /api/items`, `PATCH|DELETE /api/items/[id]`, `PATCH /api/items/reorder`,
+  `GET /api/media`. Clients no longer send any auth header — Clerk's same-origin
+  session cookie authenticates the fetch (`ItemForm`, `AdminItemList`, `MediaPicker`).
 
-### 7.3 Replace Admin Panel with Clerk
-- Remove simple password admin panel
-- Create seller dashboard protected with Clerk auth
-- Multiple sellers can now upload items
+### 7.4 Later: multi-seller
+Multi-seller onboarding (multiple admins, per-seller items) stays a future phase —
+it builds on this Clerk foundation (add seller roles / ownership on items).
 
 ---
 
@@ -783,7 +793,7 @@ custom order. New items are inserted at the **top** (`MIN(sort_order) − 1`).
 
 ### 8.3 `PATCH /api/items/reorder`
 
-- **Auth:** admin secret via `x-admin-password` (same `isAuthorized` as other mutating routes).
+- **Auth:** Clerk admin (`isAdmin()`, same as other mutating routes; see Part 7).
 - **Body:** `{ "orderedIds": number[] }` — the full list of item ids in their new order; index 0 is shown first.
 - **Effect:** `reorderItems()` sets each item's `sort_order` to its index + 1.
 - **Response:** `{ "success": true }`, or `400` if `orderedIds` isn't an array of integers.
@@ -819,7 +829,7 @@ The picker hands URLs back via `onAdd`; `ItemForm.addUrls()` appends them and
 
 Create `app/api/media/route.ts`:
 
-- **Auth:** admin secret via `x-admin-password` (same `isAuthorized` as mutating routes);
+- **Auth:** Clerk admin (`isAdmin()`, same as mutating routes; see Part 7);
   `401` if missing. The Cloudinary **Admin** API needs the API secret, so this listing
   must be server-side and admin-gated.
 - **Config:** reuses existing env — `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`,
@@ -981,11 +991,11 @@ one keyword-bearing `<h1>`, image `alt`s, and that any route add/rename/remove u
 
 - [ ] Create Neon account & database
 - [ ] Create Next.js 16.2.10 project
-- [ ] Install dependencies (no Clerk for MVP)
-- [ ] Set up `.env.local` with ADMIN_PASSWORD
+- [ ] Install dependencies (incl. `@clerk/nextjs`)
+- [ ] Set up `.env.local` with Clerk keys (see Part 7) + create the Clerk app
 - [ ] Create database schema in Neon
 - [ ] Create API routes (items, item detail)
-- [ ] Create admin panel (ItemForm + authentication page)
+- [ ] Create admin panel (ItemForm + Clerk-gated `/admin`)
 - [ ] Set up Cloudinary account
 - [ ] Upload sample images to Cloudinary
 - [ ] Test database connection

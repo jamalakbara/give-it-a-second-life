@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { reorderItems } from "@/lib/data/items";
-import { isAuthorized } from "@/lib/adminAuth";
+import { isAdmin } from "@/lib/adminAuth";
 import type { ReorderInput } from "@/lib/types";
 
 // PATCH /api/items/reorder — admin-only. Persists a new catalog order.
 // Body: { orderedIds: number[] } — full list of item ids, index 0 shown first.
 export async function PATCH(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -2,7 +2,29 @@
 
 **Design Reference:** jackwatkins.co/works (live, inspected July 2026)
 **Aesthetic:** Dark "living gallery" — near-black stage, drifting aurora glow, high-contrast serif display, glassmorphic UI, large staggered imagery
-**Status:** MVP Design System — v2.16 (rebrand → "Give It the Second Life"; wordmark `Second Life°`)
+**Status:** MVP Design System — v2.23 (logotype font reverted Telma → Kola)
+
+> **Note (v2.23):** The **"Second Life°" logotype** reverted back to **Kola** (the v2.21 choice) —
+> the brief Telma experiment (v2.22) is dropped and Telma removed. Headings (Tanker) and body
+> (Clash Display) unchanged. See §1.2.
+
+> **Note (v2.21):** Headings now use **Tanker** (self-hosted display, `font-serif`). The logotype
+> was scoped to its own `font-logo` token (`--font-logo`), applied in `Navbar.tsx` + `Footer.tsx`.
+> Clash Display (body/UI) unchanged. See §1.2.
+
+> **Note (v2.20):** Typography swapped to **self-hosted** fonts (§1.2). Kola replaced Playfair on
+> the `font-serif` slot; **Clash Display** (variable sans, 200–700) replaced Inter on `font-sans`.
+> Loaded via `next/font/local` from `app/fonts/*.woff2` — no more Google Fonts request.
+
+> **Note (v2.19):** The nav no longer shows a **Sell** link. The admin dashboard (`/admin`)
+> is now gated by **Clerk** auth (role `admin`) instead of the old client-side password
+> form — its header uses Clerk's `<UserButton>`. See §2.3 (nav) + §2.6 (Admin access).
+
+> **Note (v2.17):** The home "Latest arrivals" carousel (§2.10) **no longer uses a sticky pin**.
+> The old `sticky top-…` inside a tall `min-h-[calc(50svh+36rem)]` section held vertical page
+> scroll for a ~200–300px range that felt like the scroll being **"stuck"** when passing the
+> strip. The section is now a plain `relative py-16` block so the carousel flows with the page
+> and scroll never stalls. Scatter, peek, mask, caption, and dashes are unchanged.
 
 > **Note (v2.16):** Rebrand from "Selling Preloved Items" → **"Give It the Second Life"**.
 > The navbar/footer **wordmark** is now the serif text **`Second Life°`** (short form with a
@@ -95,11 +117,21 @@ CTAs), the aurora, and the single coral accent.
 ### 1.2 Typography
 
 ```
-Display / Serif : Playfair Display  (stand-in for reference "JW Serif")  → var(--font-serif)
-Body / Sans     : Inter             (stand-in for reference "JW Sans")   → var(--font-sans)
-Weights loaded  : Playfair 400/500/600/700 · Inter 400/500/600
+Display / Headings : Tanker         (self-hosted display)         → var(--font-serif)
+Logotype           : Kola           (self-hosted display serif)    → var(--font-logo)
+Body / Sans        : Clash Display  (self-hosted variable sans)    → var(--font-sans)
+Weights loaded     : Tanker 400 · Kola 400 (both single weight) · Clash Display 200–700 (variable)
+Loading            : next/font/local in app/layout.tsx, woff2 in app/fonts/ (display: swap)
 ```
-Reference hero is a high-contrast didone serif at `72px+ / weight 500`; Playfair Display 500 matches its character.
+All three fonts are self-hosted via `next/font/local` (Indian Type Foundry / Fontshare) —
+no Google Fonts request. **Tanker** is the display face on the hero and all headings
+(`font-serif`). **Kola** is scoped to the **"Second Life°" logotype only** (`font-logo`,
+applied in `Navbar.tsx` + `Footer.tsx`). **Clash Display** is the variable sans for body + UI.
+
+> **Tanker + Kola are single-weight (400).** Headings/logotype still carry `font-medium`
+> in markup, but on these faces that class is a visual **no-op** (renders 400) — both
+> already read bold/display. Body weight classes (`font-medium`/`font-semibold`) work
+> normally on Clash.
 
 #### Type scale (fluid — `clamp()`)
 | Token | Size | Use |
@@ -168,7 +200,7 @@ painting the void base; content sits in `.stage` at `relative z-10`.
 - `.veil` — now a **transparent no-op hook** kept on gallery / detail / wishlist / admin / footer sections. It used to darken lower content to `ink`, which made the background look "mixed" (colorful hero, flat-dark body); that was removed so the fixed aurora reads consistently. Legibility comes from the aurora's own center vignette + centered content columns.
 
 ### 2.3 Navigation — floating glass pill (`components/Navbar.tsx`)
-Sticky, centered, `max-w-1240px`, `rounded-full`, `.glass-nav` (heavier frost than `.glass`), h-14/16. Serif wordmark `Second Life°` left (also links Home `/`); `.tracked` links (Home · Gallery · Wishlist · About · Sell) center; search field + wishlist star (with `aurora-rose` count badge) right. Mobile: wordmark + star + hamburger → glass dropdown panel with search + links.
+Sticky, centered, `max-w-1240px`, `rounded-full`, `.glass-nav` (heavier frost than `.glass`), h-14/16. Serif wordmark `Second Life°` left (also links Home `/`); `.tracked` links (Home · Gallery · Wishlist · About) center; search field + wishlist star (with `aurora-rose` count badge) right. Mobile: wordmark + star + hamburger → glass dropdown panel with search + links. The admin dashboard is **not** linked here — it lives at `/admin` behind Clerk sign-in (see **Admin access** in §2.6).
 
 ### 2.4 Item card — living-gallery showcase (`components/ItemCard.tsx` + `components/CardMedia.tsx`)
 Large **portrait 3:4** image, `rounded-6px`, hairline ring. Below image, left-aligned: category eyebrow (`.tracked` fg-faint) · serif title (22px) · row of IDR price + condition glass chip.
@@ -213,6 +245,12 @@ Changes**, adds a glass **Cancel** button (`variant="secondary"`) beside it, and
 **Mark as sold** custom themed checkbox (see native-control overrides above); a sold item stays in the public catalog with a **Sold out** overlay on its card (see Item card below).
 Create mode is unchanged.
 
+**Admin access (`app/admin/page.tsx`)** — the dashboard is gated by **Clerk**, not
+linked from the nav. Signed-out visitors hit Clerk's hosted sign-in; signed-in users
+without the `admin` role are redirected home. The header pairs a **Seller studio** eyebrow
++ serif **Manage Items** `h1` with Clerk's `<UserButton>` (avatar menu / sign-out) on the
+right — replacing the old password form + text "Logout".
+
 **Admin item list (`components/AdminItemList.tsx`)** — below the create card on `/admin`.
 Each item is a `.glass rounded-2xl` row: 64px `rounded-xl` thumbnail, category·condition
 eyebrow, serif title, IDR price, and an **Available/Sold** badge (sold = `aurora-rose/15`
@@ -254,7 +292,7 @@ The gallery no longer renders the whole catalog at once — it loads in batches 
 
 ### 2.10 Home "Latest arrivals" scattered carousel (`components/ArrivalsCarousel.tsx`)
 
-The home preview strip is a **Gucci-Beauty-style scattered carousel** (home-only; the gallery uses §2.9 masonry). It lives in a **pinned stage** — `app/page.tsx` renders the section as `relative min-h-[calc(50svh+36rem)]` containing a `sticky top-[max(6rem,calc((100svh-46rem)/2))]` wrapper. The fan pins at a top offset that centres it in the viewport but is **clamped to always clear the floating nav** (§2.3), so the active card holds below the nav and can't ride up under it — independent of viewport height or where the user rests (free-scroll centering alone failed this). The section height uses `50svh + 36rem` (not a plain `Nvh`) so the sticky `top` offset — which grows with the viewport — cancels the `svh` term, giving a **short, ~constant pin hold (~190px)** rather than a long dead-zone that scales with the screen (a tall `185vh` earlier froze page scroll for ~1000px). It releases once the user scrolls that short range past. A horizontal **scroll-snap** (`snap-x snap-mandatory`) `<ul>` track of the 6 newest items, `overflow-x-auto` with the scrollbar hidden (`.scrollbar-none` in `app/globals.css`); all 6 slides load **`eager`** (§2.8) so swiping never flashes a blank card.
+The home preview strip is a **Gucci-Beauty-style scattered carousel** (home-only; the gallery uses §2.9 masonry). It **flows with the page** — `app/page.tsx` renders the section as a plain `relative py-16` block (**no sticky pin**). An earlier version pinned the fan via `sticky top-…` inside a tall `min-h-[calc(50svh+36rem)]` section to hold it centred below the nav, but that pin held vertical page scroll for a ~200–300px range that read as the scroll being **"stuck"** when passing the strip; the pin was removed so page scroll never stalls. A horizontal **scroll-snap** (`snap-x snap-mandatory`) `<ul>` track of the 6 newest items, `overflow-x-auto` with the scrollbar hidden (`.scrollbar-none` in `app/globals.css`); all 6 slides load **`eager`** (§2.8) so swiping never flashes a blank card.
 
 - **Scatter (the signature)** — a `requestAnimationFrame`-throttled `scroll`/`resize` handler measures each slide's center vs the track's viewport center, normalizes the distance `d ∈ [−1, 1]`, and writes CSS vars on the slide: `--rot = d·7deg`, `--ty = |d|·22px`, `--scale = 1 − |d|·0.14`, `--dim = 1 − |d|·0.5`, `--z`. Slide transform = `translateY(var(--ty)) rotate(var(--rot)) scale(var(--scale))`, `filter: brightness(var(--dim))`, `transform-origin: center bottom`, eased `0.6s cubic-bezier(0.22,1,0.36,1)`. Net effect: the **centered** card is upright/largest/brightest, neighbors fan out, tilt, drop and dim.
 - **Edge blend** — cards are shown on the bare aurora (not the darker `.veil`), so `CardMedia` is passed `blendEdges`: corners round to **`rounded-[14px]`**, the shadow is a single **warm-tinted, wide-blur, deep-negative-spread** bloom (`0 10px 70px -42px rgba(18,12,6,0.42)`) — a soft diffuse glow under the card rather than a tight band pooling in the gap above the caption (which made the bottom edge look "squared"); still small enough that the three cards' shadows don't merge into a dark grey rectangle over the vibrant aurora — and a non-interactive **feather vignette** (`radial-gradient(118% 128% at 50% 42%, transparent 50%, rgba(20,16,11,0.5) 100%)` — the warm void tone) fades the bright photo toward the border so it melts into the aurora instead of reading as a hard rectangle. Gallery/wishlist cards keep the crisp `rounded-[6px]` treatment (`blendEdges` off).
@@ -286,11 +324,25 @@ Card 3D tilt    : transform 0.6s cubic-bezier(0.16,1,0.3,1)   (perspective 800px
 Card pill trail : left/top 400ms cubic-bezier(0.22,1,0.36,1) + opacity 300ms
 Arrivals scatter: per-slide transform/filter 0.6s cubic-bezier(0.22,1,0.36,1), driven by rAF scroll (§2.10)
 Hero entrance   : `rise` 0.9s (fade + 24px up)
-Reduced-motion  : shader replaced by static CSS aurora; all drift/rise disabled
+Page transition — default swap  : `.fade-rise` fade+blur+12px rise (exit 260ms, enter 420ms after exit)
+Page transition — directional   : `.nav-forward` / `.nav-back` 80px blur-slide (560ms), asymmetric fade
+Page transition — shared morph  : per-item `view-transition-name: item-<id>` on the <img>; card cover ⇄ item hero, browser-default tween
+Page transition — anchored      : navbar (`site-header`) + aurora (`aurora-bg`) get their own frozen VT groups; footer rides the frozen `root` snapshot (raw <style> in layout.tsx, Lightning CSS strips the `root` pseudo). Navbar traded its `backdrop-filter` frost for a solid aurora-tinted `.glass-nav` fill (`rgba(28,20,12,0.62)`) so it can be a steady VT group without snapshotting as a square / breaking the blur. Mobile menu dropdown keeps its backdrop-blur (not a VT group).
+Reduced-motion  : shader replaced by static CSS aurora; all drift/rise disabled; every `::view-transition-*` duration/delay zeroed (instant swap)
 ```
 Easing token: `--ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1)`. The background is the one
 GPU/WebGL element (`@paper-design/shaders-react`); everything else (card tilt/pill, hero
-rise) is plain CSS transforms + transitions driven by React state — no GSAP/Framer.
+rise, page transitions) is plain CSS transforms + transitions — no GSAP/Framer.
+
+**Page transitions** use React 19's native `<ViewTransition>` (enabled via
+`experimental.viewTransition` in `next.config.ts`). The page content is wrapped once
+in **`app/template.tsx`** (a template re-mounts per navigation — that's what fires the
+enter/exit animations; a layout persists and would never animate). `<Link>`/`router.push`
+carry a `transitionTypes` of `nav-forward` (deeper: gallery, item, wishlist, search) or
+`nav-back` (home/logo, item "← Gallery"). Untyped navigations fall back to the
+`.fade-rise` default. All view-transition rules live in `app/globals.css`
+(`::view-transition-old/new(.fade-rise | .nav-forward | .nav-back)`, `aurora-bg` anchor,
+`tx-*` keyframes). No library added.
 
 ---
 
@@ -324,10 +376,13 @@ components/ItemForm.tsx → admin create/edit form (dual-mode, +Add images butto
 components/MediaPicker.tsx → modal picker: Gallery (reuse Cloudinary uploads) + Upload tabs
 components/SortableImageGrid.tsx → drag-to-reorder image thumbnails (@dnd-kit, cover badge)
 components/AdminItemList.tsx → admin item list (drag-reorder rows, sold badge, edit + inline delete confirm)
+components/AdminDashboard.tsx → client body of /admin (ItemForm + AdminItemList, refresh state)
+proxy.ts               → Clerk middleware (clerkMiddleware) — Next 16 proxy convention
+lib/adminAuth.ts       → isAdmin() — Clerk currentUser role check (gates admin API routes)
 app/page.tsx           → home: minimal hero + cream CTA + "Latest arrivals" scattered carousel (§2.10) → /gallery
 app/gallery/page.tsx   → gallery: single-line hero (eyebrow + serif <h1>) + FilterBar + staggered infinite-scroll grid
 app/about/page.tsx     → static About page (hero + mission + 3 glass how-it-works cards + seller intro + CTA); reuses existing tokens only
-app/admin/page.tsx     → password gate + create form + AdminItemList
+app/admin/page.tsx     → Clerk auth guard (server) + <UserButton> + <AdminDashboard>
 app/items/[id]/page.tsx→ detail
 ```
 

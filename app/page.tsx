@@ -55,32 +55,25 @@ export default async function HomePage() {
 
       {/* Preview strip — a taste of the catalog, then send them in */}
       {featured.length > 0 && (
-        // Height tuned so the sticky pin below is a short, ~constant hold
-        // (~190px) instead of scaling with the viewport: the fan's `top` offset
-        // grows with the viewport and cancels the `50svh` term, so the pin
-        // travel stays ~constant. Avoids over-holding page scroll on tall screens.
-        <section className="veil relative min-h-[calc(50svh_+_36rem)] px-4 md:px-10 lg:px-16">
-          {/* The fan is pinned for the section's scroll range at a top offset
-              that centres it in the viewport but is clamped to always clear the
-              floating nav — so the tall active card can never ride up under the
-              nav no matter where the user rests or how tall their viewport is. */}
-          <div className="sticky top-[max(6rem,calc((100svh-46rem)/2))] pb-16">
-            <div className="mx-auto w-full max-w-[1120px]">
-              <div className="mb-10 flex items-baseline justify-between gap-6">
-                <p className="tracked text-[11px] text-fg-muted">Latest arrivals</p>
-                <Link
-                  href="/gallery"
-                  className="tracked text-[10px] text-fg-faint underline-offset-4 transition-colors hover:text-fg hover:underline"
-                >
-                  View the full gallery →
-                </Link>
-              </div>
+        // Carousel flows with the page (no sticky pin) so vertical scroll never
+        // stalls while passing the strip. The track masks its own edges, so the
+        // fan still fades off-screen rather than hard-clipping.
+        <section className="veil relative px-4 py-16 md:px-10 lg:px-16">
+          <div className="mx-auto w-full max-w-[1120px]">
+            <div className="mb-10 flex items-baseline justify-between gap-6">
+              <p className="tracked text-[11px] text-fg-muted">Latest arrivals</p>
+              <Link
+                href="/gallery"
+                className="tracked text-[10px] text-fg-faint underline-offset-4 transition-colors hover:text-fg hover:underline"
+              >
+                View the full gallery →
+              </Link>
             </div>
-            {/* Carousel breaks out of the 1120 container to the full section
-                width so peeking side cards fade off the screen edges rather than
-                hard-clipping mid-section (the track masks its own edges). */}
-            <ArrivalsCarousel items={featured} />
           </div>
+          {/* Carousel breaks out of the 1120 container to the full section
+              width so peeking side cards fade off the screen edges rather than
+              hard-clipping mid-section (the track masks its own edges). */}
+          <ArrivalsCarousel items={featured} />
         </section>
       )}
     </div>

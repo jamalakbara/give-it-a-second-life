@@ -25,8 +25,6 @@ import { Button } from "@/components/Button";
 import { ItemForm } from "@/components/ItemForm";
 import { SmoothImage } from "@/components/SmoothImage";
 
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
-
 export function AdminItemList({ refreshToken = 0 }: { refreshToken?: number }) {
   const router = useRouter();
   const [items, setItems] = useState<Item[]>([]);
@@ -105,7 +103,6 @@ export function AdminItemList({ refreshToken = 0 }: { refreshToken?: number }) {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-password": ADMIN_PASSWORD,
         },
         body: JSON.stringify({ orderedIds: next.map((item) => item.id) }),
       });
@@ -123,7 +120,6 @@ export function AdminItemList({ refreshToken = 0 }: { refreshToken?: number }) {
     try {
       const res = await fetch(`/api/items/${id}`, {
         method: "DELETE",
-        headers: { "x-admin-password": ADMIN_PASSWORD },
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);

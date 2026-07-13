@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { isAuthorized } from "@/lib/adminAuth";
+import { isAdmin } from "@/lib/adminAuth";
 
 // Lists images already uploaded to the Cloudinary folder so the admin can reuse
 // them instead of re-uploading. Uses the Cloudinary Admin Search API (needs the
-// API secret) — so this runs server-side and is gated behind the admin password.
+// API secret) — so this runs server-side and is gated behind Clerk admin auth.
 export async function GET(req: Request) {
-  if (!isAuthorized(req)) {
+  if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getItem, getItems } from "@/lib/data/items";
 import {
@@ -67,9 +68,18 @@ export default async function ItemDetailPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <div className="mx-auto max-w-[1180px]">
+        <Link
+          href="/gallery"
+          transitionTypes={["nav-back"]}
+          className="tracked mb-8 inline-flex items-center gap-2 text-[10px] text-fg-muted transition-colors duration-200 hover:text-fg"
+        >
+          <span aria-hidden>&larr;</span> Gallery
+        </Link>
+      </div>
       <div className="mx-auto flex max-w-[1180px] flex-col gap-10 md:flex-row lg:gap-16">
         <div className="md:w-1/2 lg:w-[55%]">
-          <ImageGallery images={item.images} />
+          <ImageGallery images={item.images} itemId={item.id} />
         </div>
 
         <div className="md:w-1/2 lg:w-[45%] md:pt-6">

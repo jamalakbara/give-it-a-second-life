@@ -1,21 +1,35 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Inter } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import localFont from "next/font/local";
 import "./globals.css";
 import { AuroraGL } from "@/components/AuroraGL";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { SITE_DESCRIPTION, SITE_URL } from "@/lib/seo";
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// Self-hosted display face for all headings (font-serif token). Single weight (400).
+const tanker = localFont({
+  src: "./fonts/Tanker-Regular.woff2",
+  variable: "--font-tanker",
+  weight: "400",
+  display: "swap",
 });
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+
+// Self-hosted display — scoped to the "Second Life°" logotype (font-logo token).
+const boxing = localFont({
+  src: "./fonts/Boxing-Regular.woff2",
+  variable: "--font-boxing",
+  weight: "400",
+  display: "swap",
+});
+
+// Self-hosted variable sans for body + UI (font-sans token). Axis: wght 200–700.
+const clashDisplay = localFont({
+  src: "./fonts/ClashDisplay-Variable.woff2",
+  variable: "--font-clash",
+  weight: "200 700",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -33,18 +47,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${playfair.variable} ${inter.variable} h-full antialiased`}
-    >
+    <ClerkProvider>
+      <html
+        lang="en"
+        className={`${tanker.variable} ${boxing.variable} ${clashDisplay.variable} h-full antialiased`}
+      >
       <body className="min-h-full p-2 md:p-2.5">
+        {/* Freezes the view-transition root snapshot so the navbar/footer (which
+            live outside the transition wrapper, in `root`) don't crossfade/blink
+            during a page change. Injected raw because Lightning CSS strips the
+            `root` pseudo-argument from globals.css. */}
+        <style>{`::view-transition-group(root),::view-transition-old(root),::view-transition-new(root){animation:none!important}`}</style>
         <AuroraGL />
         <div className="stage relative z-10 flex min-h-[calc(100vh-20px)] flex-col">
           <Navbar />
+          {/* Page-transition scope lives in app/template.tsx (a template
+              re-mounts per navigation, which is what fires the enter/exit
+              animations — a layout would persist and never animate). */}
           <main className="flex-1">{children}</main>
           <Footer />
         </div>
       </body>
-    </html>
+      </html>
+    </ClerkProvider>
   );
 }

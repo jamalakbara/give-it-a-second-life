@@ -27,8 +27,9 @@
      pops off the terracotta background (kept separate from the bg blooms). */
   --color-accent: #e0533d;
 
-  --font-serif: var(--font-playfair), Georgia, serif;
-  --font-sans: var(--font-inter), "system-ui", sans-serif;
+  --font-serif: var(--font-tanker), Georgia, serif;
+  --font-logo: var(--font-boxing), Georgia, serif;
+  --font-sans: var(--font-clash), "system-ui", sans-serif;
 
   --text-hero: clamp(48px, 9vw, 104px);
   --text-hero--line-height: 1.02;
@@ -100,12 +101,14 @@ body {
   border: 1px solid var(--color-hairline);
 }
 
-/* Stronger frosted glass for the sticky navbar so overlapped content
-   is heavily diffused (matches jackwatkins.co header). Blur is applied
-   via Tailwind's backdrop-blur utilities on the element (see Navbar) —
-   Lightning CSS prunes hand-written `backdrop-filter` from this file. */
+/* Navbar bar background. The desktop header is a view-transition group (so it
+   stays put during page changes) and therefore CANNOT use backdrop-filter — a
+   backdrop-filtered element promoted to a VT group snapshots as a solid square.
+   So the frost is a solid, aurora-tinted translucent fill (higher opacity to
+   stay legible without the live blur) rather than a real backdrop-blur. The
+   mobile menu dropdown (not a VT group) keeps its Tailwind backdrop-blur. */
 .glass-nav {
-  background: rgba(28, 20, 12, 0.22);
+  background: rgba(28, 20, 12, 0.34);
   border: 1px solid var(--color-hairline);
 }
 
@@ -138,6 +141,117 @@ body {
 @media (prefers-reduced-motion: reduce) {
   [class*="drift"], .animate-rise { animation: none !important; }
   .skeleton { animation: none; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Page transitions (React 19 <ViewTransition> — enabled in next.config.ts)
+
+   The page content is wrapped once in app/template.tsx (a template re-mounts
+   per navigation, which is what fires enter/exit). Steady chrome: the navbar and
+   Aurora canvas each get their own frozen view-transition group (site-header /
+   aurora-bg, below) so they don't move or blink; the footer rides the `root`
+   snapshot, which is also frozen (raw <style> in layout.tsx — Lightning CSS
+   strips the `root` pseudo). The navbar can only be named because it dropped
+   backdrop-filter for a solid tint (a backdrop-filtered element named as a VT
+   group snapshots as a square). Three moves: soft fade-rise default swap,
+   forward/back directional blur-slide, and a shared-element morph (card cover →
+   item hero). Reused easing: --ease-out-soft.
+   ───────────────────────────────────────────────────────────────────────── */
+:root {
+  --tx-exit: 260ms;   /* old content leaves */
+  --tx-enter: 420ms;  /* new content arrives more gently, after the exit */
+}
+
+/* Default swap (untyped navs: search, direct clicks) — fade + slight rise */
+::view-transition-old(.fade-rise) {
+  animation: var(--tx-exit) var(--ease-out-soft) both tx-fade-out;
+}
+::view-transition-new(.fade-rise) {
+  animation: var(--tx-enter) var(--ease-out-soft) var(--tx-exit) both tx-fade-rise;
+}
+
+/* Directional slide — forward (deeper) leaves left / enters from right; back
+   reverses. 80px is enough to read direction without a fast-moving element. */
+::view-transition-old(.nav-forward) {
+  --slide-offset: -80px;
+  animation:
+    var(--tx-exit) var(--ease-out-soft) both tx-fade reverse,
+    560ms var(--ease-out-soft) both tx-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --slide-offset: 80px;
+  animation:
+    var(--tx-enter) var(--ease-out-soft) var(--tx-exit) both tx-fade,
+    560ms var(--ease-out-soft) both tx-slide;
+}
+::view-transition-old(.nav-back) {
+  --slide-offset: 80px;
+  animation:
+    var(--tx-exit) var(--ease-out-soft) both tx-fade reverse,
+    560ms var(--ease-out-soft) both tx-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --slide-offset: -80px;
+  animation:
+    var(--tx-enter) var(--ease-out-soft) var(--tx-exit) both tx-fade,
+    560ms var(--ease-out-soft) both tx-slide;
+}
+
+/* Shared-element morph (card cover → item hero) is driven by a per-item
+   `view-transition-name: item-<id>` set on the <img> in both places (see
+   SmoothImage's viewTransitionName prop). The browser matches the same name
+   across old/new pages and tweens size+position — no extra CSS needed; the
+   card and hero share the 3/4 aspect so the morph stays artifact-free. */
+
+/* Aurora anchor — the always-animating canvas holds still instead of riding the
+   root crossfade (which would double-expose it). */
+::view-transition-group(aurora-bg) { animation: none; }
+::view-transition-old(aurora-bg) { display: none; }
+::view-transition-new(aurora-bg) { animation: none; }
+
+/* Navbar anchor — its own steady group so the sticky bar never blinks during a
+   page change (a sticky element in the `root` snapshot gets mis-positioned and
+   vanishes for the ~0.5s transition). `display:none` on the old snapshot avoids
+   a double-navbar flash; z-index keeps it above the sliding page content. This
+   is only safe because the navbar dropped backdrop-filter for a solid tint (see
+   .glass-nav) — a backdrop-filter element named here would snapshot as a square. */
+::view-transition-group(site-header) { animation: none; z-index: 100; }
+::view-transition-old(site-header) { display: none; }
+::view-transition-new(site-header) { animation: none; }
+
+/* NOTE: the rule that freezes the root snapshot — `::view-transition-old(root),
+   ::view-transition-new(root){ animation:none }` — is injected as a raw <style>
+   in app/layout.tsx, NOT here. Lightning CSS (this project's compiler) prunes
+   the `root` pseudo-argument from hand-written CSS (same reason `.glass`'s
+   backdrop-filter needs the @supports guard above). It anchors the navbar/footer
+   (which live in `root`) so the sticky navbar doesn't blink out mid-transition,
+   while the page content still animates via its own named group. */
+
+@keyframes tx-fade-out {
+  to { opacity: 0; filter: blur(4px); }
+}
+@keyframes tx-fade-rise {
+  from { opacity: 0; filter: blur(4px); transform: translateY(12px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+@keyframes tx-fade {
+  from { opacity: 0; filter: blur(3px); }
+  to { opacity: 1; filter: blur(0); }
+}
+@keyframes tx-slide {
+  from { translate: var(--slide-offset); }
+  to { translate: 0; }
+}
+
+/* Motion sensitivity: kill all positional/opacity view-transition motion —
+   the browser then swaps instantly (its no-transition default). */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
 }
 
 ::selection {

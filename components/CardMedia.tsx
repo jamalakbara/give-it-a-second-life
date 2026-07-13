@@ -140,6 +140,9 @@ export function CardMedia({
             sizes="(max-width: 767px) 100vw, 480px"
             eager={eager}
             className={isSold ? "grayscale-[0.4]" : ""}
+            // Shared-element morph: this cover tweens into the item hero of the
+            // same id on the detail page (see ImageGallery). Named on the <img>.
+            viewTransitionName={`item-${itemId}`}
           />
         )}
 
@@ -169,6 +172,7 @@ export function CardMedia({
         {/* click target — covers the image, sibling to the heart (no nesting) */}
         <Link
           href={href}
+          transitionTypes={["nav-forward"]}
           aria-label={`View ${title}`}
           className="absolute inset-0 z-0 outline-none"
         />

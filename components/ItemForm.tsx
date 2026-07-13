@@ -14,8 +14,6 @@ import { Button } from "@/components/Button";
 import { SortableImageGrid } from "@/components/SortableImageGrid";
 import { MediaPicker } from "@/components/MediaPicker";
 
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
-
 const emptyForm = {
   title: "",
   description: "",
@@ -88,7 +86,6 @@ export function ItemForm({
           method: isEdit ? "PATCH" : "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-admin-password": ADMIN_PASSWORD,
           },
           body: JSON.stringify({
             ...form,

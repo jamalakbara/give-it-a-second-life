@@ -45,7 +45,15 @@ function CloseIcon() {
 const arrowClasses =
   "glass grid size-10 place-items-center rounded-full text-fg backdrop-blur transition hover:text-cream hover:ring-1 hover:ring-cream";
 
-export function ImageGallery({ images }: { images: ItemImage[] }) {
+export function ImageGallery({
+  images,
+  itemId,
+}: {
+  images: ItemImage[];
+  // Matches the card cover's `view-transition-name` so navigating from the
+  // gallery/carousel morphs that thumbnail into this hero image.
+  itemId: number;
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
@@ -102,6 +110,9 @@ export function ImageGallery({ images }: { images: ItemImage[] }) {
             alt={active.alt}
             priority
             sizes="(max-width: 767px) 100vw, 55vw"
+            // Only the first (cover) image morphs from the card; once the user
+            // browses to another image the name simply rides along.
+            viewTransitionName={activeIndex === 0 ? `item-${itemId}` : undefined}
           />
         </button>
         {hasMultiple && (

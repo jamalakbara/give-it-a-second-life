@@ -21,6 +21,7 @@ export function SmoothImage({
   eager = false,
   draggable,
   objectFit = "cover",
+  viewTransitionName,
 }: {
   src: string;
   alt: string;
@@ -32,6 +33,9 @@ export function SmoothImage({
   eager?: boolean;
   draggable?: boolean;
   objectFit?: "cover" | "contain";
+  // Names the <img> for a shared-element page transition (morph). The same name
+  // on a card cover and the item hero makes the browser tween between them.
+  viewTransitionName?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
   const skelRef = useRef<HTMLDivElement>(null);
@@ -71,6 +75,7 @@ export function SmoothImage({
         loading={!priority && eager ? "eager" : undefined}
         draggable={draggable}
         onLoad={() => setLoaded(true)}
+        style={viewTransitionName ? { viewTransitionName } : undefined}
         className={`${
           objectFit === "contain" ? "object-contain" : "object-cover"
         } transition-opacity duration-500 ${

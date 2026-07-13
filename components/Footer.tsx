@@ -7,7 +7,7 @@ export function Footer() {
       <div className="mx-auto max-w-[1240px]">
         <NewsletterForm />
         <div className="mt-20 flex flex-col items-center gap-5 border-t border-hairline pt-10 text-center">
-          <p className="font-serif text-[20px] font-medium text-fg">
+          <p className="font-logo text-[20px] font-medium text-fg">
             Second Life&deg;
           </p>
           <nav className="flex gap-7" aria-label="Footer">

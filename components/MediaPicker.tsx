@@ -4,8 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/Button";
 import { SmoothImage } from "@/components/SmoothImage";
 
-const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
-
 interface CloudinarySignature {
   cloudName: string;
   apiKey: string;
@@ -61,7 +59,6 @@ export function MediaPicker({
       try {
         const res = await fetch(
           `/api/media${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
-          { headers: { "x-admin-password": ADMIN_PASSWORD } },
         );
         if (!res.ok) {
           const data = await res.json().catch(() => null);

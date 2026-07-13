@@ -11,7 +11,6 @@ const NAV_LINKS = [
   { href: "/gallery", label: "Gallery" },
   { href: "/wishlist", label: "Wishlist" },
   { href: "/about", label: "About" },
-  { href: "/admin", label: "Sell" },
 ];
 
 function SearchField({ onDone }: { onDone?: () => void }) {
@@ -30,7 +29,9 @@ function SearchField({ onDone }: { onDone?: () => void }) {
         else params.delete("q");
         // Search always lands on the gallery, from any page.
         const qs = params.toString();
-        router.push(qs ? `/gallery?${qs}` : "/gallery");
+        router.push(qs ? `/gallery?${qs}` : "/gallery", {
+          transitionTypes: ["nav-forward"],
+        });
         onDone?.();
       }}
     >
@@ -54,10 +55,18 @@ function NavbarInner() {
 
   return (
     <div className="sticky top-0 z-50 px-3 pt-3 md:px-6 md:pt-5">
-      <header className="glass-nav backdrop-blur-sm backdrop-saturate-150 mx-auto flex h-14 max-w-[1240px] items-center justify-between gap-4 rounded-full px-4 md:h-16 md:px-7 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]">
+      <header
+        className="glass-nav mx-auto flex h-14 max-w-[1240px] items-center justify-between gap-4 rounded-full px-4 md:h-16 md:px-7 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)]"
+        // Own steady view-transition group so the navbar never blinks during a
+        // page change. Safe to name now: the frosted `backdrop-filter` was traded
+        // for a solid aurora-tinted `.glass-nav` bg, so there's no backdrop-root
+        // to break (which is what would kill the blur / snapshot a square).
+        style={{ viewTransitionName: "site-header" }}
+      >
         <Link
           href="/"
-          className="font-serif text-[19px] font-medium tracking-tight text-fg md:text-[22px]"
+          transitionTypes={["nav-back"]}
+          className="font-logo text-[19px] font-medium tracking-tight text-fg md:text-[22px]"
         >
           Second Life&deg;
         </Link>
@@ -67,6 +76,7 @@ function NavbarInner() {
             <Link
               key={link.href}
               href={link.href}
+              transitionTypes={link.href === "/" ? ["nav-back"] : ["nav-forward"]}
               className={`tracked text-[11px] transition-colors duration-200 hover:text-fg ${
                 pathname === link.href ? "text-fg" : "text-fg-muted"
               }`}
@@ -82,6 +92,7 @@ function NavbarInner() {
           </div>
           <Link
             href="/wishlist"
+            transitionTypes={["nav-forward"]}
             aria-label={`Wishlist (${count} items)`}
             className="relative p-2 text-fg-muted transition-colors duration-200 hover:text-fg"
           >
@@ -114,6 +125,7 @@ function NavbarInner() {
               <Link
                 key={link.href}
                 href={link.href}
+                transitionTypes={link.href === "/" ? ["nav-back"] : ["nav-forward"]}
                 onClick={() => setMenuOpen(false)}
                 className={`tracked py-3 text-[12px] ${
                   pathname === link.href ? "text-fg" : "text-fg-muted"

@@ -31,7 +31,14 @@ export function AuroraGL() {
   }
 
   return (
-    <div aria-hidden className="fixed inset-0 z-0 overflow-hidden bg-void">
+    <div
+      aria-hidden
+      className="fixed inset-0 z-0 overflow-hidden bg-void"
+      // Anchor the canvas out of the page transition — the shader is always
+      // animating, so letting it ride the root crossfade would double-expose /
+      // flicker during navigations. See ::view-transition-*(aurora-bg) in globals.css.
+      style={{ viewTransitionName: "aurora-bg" }}
+    >
       <MeshGradient
         colors={["#14100b", "#c2542f", "#ca8a04", "#d6a35c", "#7c3a1d", "#4a2410"]}
         distortion={0.8}

@@ -96,7 +96,7 @@ The platform will transition to a revenue model once multi-seller functionality 
   - "Contact via WhatsApp" button
   - Seller info (Akbar's name, bio)
 
-- **Admin Item Management** (password-gated `/admin`)
+- **Admin Item Management** (Clerk-gated `/admin`, single owner)
   - Create items (title, price, category, condition, size/color/material, image uploads)
   - **Multi-image upload with reordering** — drag-and-drop uploader; drag thumbnails to
     reorder; the first image is the catalog cover (see TECH_SETUP § 8.4)
@@ -113,8 +113,10 @@ The platform will transition to a revenue model once multi-seller functionality 
   - **Mark Sold / Available** — a sold item stays visible in the public catalog with a
     centered **Sold out** tag on its card, and remains in the admin list for management
     (see § 12 inventory)
-  - Mutating endpoints (`POST`/`PATCH`/`DELETE`) require the admin secret via the
-    `x-admin-password` header (see TECH_SETUP § 4.4)
+  - **Admin auth via Clerk** — `/admin` and every mutating endpoint
+    (`POST`/`PATCH`/`DELETE`, plus `GET /api/media`) require a signed-in Clerk user
+    whose `publicMetadata.role === "admin"` (the single owner). No shared password;
+    the browser sends no auth header (Clerk session cookie). See TECH_SETUP § 7.
 
 #### 3.2 Contact Flow (MVP)
 - WhatsApp contact button on each item
@@ -138,8 +140,22 @@ visitors landing from search or an item link understand *why* the gallery exists
   and `AboutPage` + `Organization` JSON-LD; registered in the sitemap
 - Linked from both the Navbar and the Footer
 
+#### 3.5 Animated Page Transitions (MVP)
+Route changes are choreographed instead of hard-swapping, so navigation reads as one
+continuous motion (removes the brief "load pop" between pages). Built on React 19's
+native `<ViewTransition>` — no animation library.
+- **Fade-rise** default on any untyped navigation (fade + blur + slight upward rise)
+- **Directional blur-slide** — forward navigations (into the gallery, an item, wishlist,
+  search) slide content in from the right; back navigations (home/logo, an item's
+  "← Gallery") reverse it
+- **Shared-element morph** — a gallery/carousel card cover tweens into the item detail
+  hero image (same image, visual continuity)
+- Navbar and the aurora background stay anchored (do not move/flicker) during transitions
+- Fully disabled under `prefers-reduced-motion` (instant swap); degrades to a plain swap
+  in browsers without View Transitions support
+
 ### Phase 2 Features (Future Scope)
-- Multi-seller onboarding & authentication
+- Multi-seller onboarding & authentication (extends the MVP Clerk single-admin setup)
 - Seller ratings & reviews
 - In-app messaging system
 - Payment processing (Stripe/PayPal)
@@ -155,7 +171,8 @@ visitors landing from search or an item link understand *why* the gallery exists
 - **Frontend:** Next.js 16.2.10 LTS + React 19.2
 - **Styling:** Tailwind CSS
 - **Database:** Neon (Serverless PostgreSQL)
-- **Authentication:** Clerk (Phase 2 sellers; MVP: WhatsApp only)
+- **Authentication:** Clerk — gates the single-owner `/admin` in MVP (role `admin`);
+  multi-seller onboarding auth is Phase 2. Buyers contact via WhatsApp (no buyer login).
 - **Image Storage:** Cloudinary (free tier)
 - **Hosting:** Vercel (free tier)
 - **Communication:** WhatsApp API (client-side redirect)
