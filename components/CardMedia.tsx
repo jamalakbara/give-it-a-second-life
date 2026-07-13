@@ -125,10 +125,11 @@ export function CardMedia({
           transition: "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
           willChange: "transform",
           boxShadow: blendEdges
-            ? // Warm-tinted (toward the void #14100b), tight + low-opacity so the
-              // three cards' shadows don't merge into a dark grey rectangle over
-              // the aurora — just a soft contact shadow that blends in.
-              "0 22px 44px -26px rgba(18, 12, 6, 0.5)"
+            ? // Warm-tinted (toward the void #14100b). Wide blur + deep negative
+              // spread so it reads as a soft diffuse bloom under the card, not a
+              // tight rectangular band pooling in the gap above the caption
+              // (which made the bottom edge look "squared").
+              "0 10px 70px -42px rgba(18, 12, 6, 0.42)"
             : "0 26px 55px -22px rgba(0, 0, 0, 0.7)",
         }}
       >
