@@ -21,8 +21,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Selling Preloved Items — A living gallery of preloved treasures",
-    template: "%s | Selling Preloved Items",
+    default: "Give It the Second Life — a living gallery of preloved treasures",
+    template: "%s | Give It the Second Life",
   },
   description: SITE_DESCRIPTION,
 };

@@ -1,9 +1,15 @@
-# Product Requirements Document: Preloved Items Marketplace
+# Product Requirements Document: Give It the Second Life
 
-**Project:** Selling Preloved Items Platform  
-**Version:** 1.0  
+**Project:** Give It the Second Life — Preloved Items Platform  
+**Version:** 1.1  
 **Date:** July 2026  
 **Author:** Akbar  
+
+> **Rebrand (v1.1):** The product was renamed from "Selling Preloved Items" to
+> **"Give It the Second Life"**. Public wordmark is `Second Life°` (navbar/footer).
+> All user-facing copy is brand-only — the curator's personal name ("Akbar") was
+> removed from the storefront (About, footer, item detail, JSON-LD `founder`).
+> Akbar remains the internal author/single seller (see `seller_akbar` data id).
 
 ---
 
@@ -364,7 +370,7 @@ visitors landing from search or an item link understand *why* the gallery exists
 - **Tone:** Conversational, Instagram-like voice
 
 ### SEO Strategy
-- Meta titles: "[Brand] [Item] | Preloved [Category] – Selling Preloved Items"
+- Meta titles: "[Brand] [Item] | Preloved [Category] – Give It the Second Life"
 - Meta descriptions: Include condition, size, price, brand
 - Alt text for all images
 - Structured data per page type: `Product` on item pages; `CollectionPage` on `/gallery`;

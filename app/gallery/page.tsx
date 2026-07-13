@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "Browse the full gallery of curated preloved pieces — clothing, tech, homeware, accessories, and more. Filter by category and condition, or search for something specific.",
   alternates: { canonical: "/gallery" },
   openGraph: {
-    title: "Gallery | Selling Preloved Items",
+    title: "Gallery | Give It the Second Life",
     description:
       "Browse curated preloved clothing, tech, homeware, and more. Every piece with a story.",
     url: "/gallery",
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
-  name: "Gallery | Selling Preloved Items",
+  name: "Gallery | Give It the Second Life",
   description:
     "A curated gallery of preloved pieces — clothing, tech, homeware, accessories, and more.",
   url: canonical("/gallery"),
@@ -69,10 +69,10 @@ export default async function GalleryPage({
       {/* Hero — single serif line under a tiny eyebrow (full aurora shows through) */}
       <section className="flex min-h-[68vh] flex-col items-center justify-center px-6 text-center">
         <p className="tracked animate-rise text-[11px] text-fg-muted">
-          A living gallery
+          Every piece, a second life
         </p>
         <h1 className="mt-6 max-w-5xl font-serif text-hero font-medium text-fg animate-rise">
-          Preloved treasures.
+          The collection.
         </h1>
       </section>
 

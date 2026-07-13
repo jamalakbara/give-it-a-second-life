@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     "A curated, gallery-first home for preloved treasures — clothing, tech, homeware, and rare finds, chosen for character and passed on for a second life.",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Selling Preloved Items — A living gallery of preloved treasures",
+    title: "Give It the Second Life — a living gallery of preloved treasures",
     description:
       "A curated, gallery-first home for preloved treasures. Every piece with a story.",
     url: "/",
@@ -36,13 +36,14 @@ export default async function HomePage() {
       {/* Hero — minimal, full aurora shows through */}
       <section className="flex min-h-[78vh] flex-col items-center justify-center px-6 text-center">
         <p className="tracked animate-rise text-[11px] text-fg-muted">
-          Selling Preloved Items
+          Give It the Second Life
         </p>
         <h1 className="mt-6 max-w-4xl font-serif text-hero font-medium leading-[1.02] text-fg animate-rise">
-          A living gallery.
+          Nothing here is new.
         </h1>
         <p className="mt-7 max-w-md text-[16px] text-fg-muted animate-rise md:text-[18px]">
-          Preloved treasures, curated and passed on for a second life.
+          And that&apos;s the point — preloved pieces, chosen for character and
+          passed on for a second life.
         </p>
         <Link
           href="/gallery"

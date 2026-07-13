@@ -2,11 +2,11 @@
 // Absolute URLs come from NEXT_PUBLIC_SITE_URL (falls back to localhost in dev).
 // Used by app/layout metadata, sitemap, robots, and page-level JSON-LD.
 
-export const SITE_NAME = "Selling Preloved Items";
+export const SITE_NAME = "Give It the Second Life";
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const SITE_DESCRIPTION =
-  "Discover preloved treasures. Extend the lifecycle of well-made things. A curated gallery of preloved pieces — clothing, tech, homeware, and more.";
+  "Give well-made things a second life. A curated gallery of preloved treasures — clothing, tech, homeware, and more — each chosen for character and passed on with care.";
 
 /** Absolute URL for a path (e.g. canonical("/gallery")). */
 export function canonical(path = "/"): string {
@@ -37,5 +37,4 @@ export const organizationJsonLd = {
   name: SITE_NAME,
   url: canonical("/"),
   description: SITE_DESCRIPTION,
-  founder: { "@type": "Person", name: "Akbar" },
 };

@@ -1,8 +1,14 @@
-# Design System: Selling Preloved Items
+# Design System: Give It the Second Life
 
 **Design Reference:** jackwatkins.co/works (live, inspected July 2026)
 **Aesthetic:** Dark "living gallery" — near-black stage, drifting aurora glow, high-contrast serif display, glassmorphic UI, large staggered imagery
-**Status:** MVP Design System — v2.15 (home "Latest arrivals" is now a scattered scroll-snap carousel)
+**Status:** MVP Design System — v2.16 (rebrand → "Give It the Second Life"; wordmark `Second Life°`)
+
+> **Note (v2.16):** Rebrand from "Selling Preloved Items" → **"Give It the Second Life"**.
+> The navbar/footer **wordmark** is now the serif text **`Second Life°`** (short form with a
+> trailing degree glyph `&deg;`) — same serif/size/weight as before, text-only (no image asset).
+> Full brand name "Give It the Second Life" is used for the hero eyebrow, page titles, and
+> JSON-LD. No token, layout, or motion change.
 
 > **Note (v2.15):** The home **preview strip** "Latest arrivals" is now a **scattered carousel** (`components/ArrivalsCarousel.tsx`) instead of a static grid — matched to the Gucci-Beauty reference. A horizontal **scroll-snap** track of the 6 newest 280px cards where each **fans out** the further its center sits from the track's viewport center: `rotate` up to **±7°**, `translateY` up to **22px** (side cards drop below the centered one), `scale` down to **~0.86**, and `brightness` down to **~0.5**. Cards use `CardMedia`'s **`blendEdges`** treatment (rounder corners + feather vignette + bloom shadow) so they melt into the aurora. The **centered card** is upright, largest and brightest; cards **peek** off both edges (side padding `calc((100% − 300px)/2)`, 300px cards). A **single centered caption** (category · serif title · price · condition chip) shows the **active** card only; below it, **progress dashes** (active = 28px wide `#e0533d`, others 14px hairline, click smooth-scrolls that card to center) and a "Swipe to discover" hint. All per-frame transforms are written to CSS vars (`--rot/--ty/--scale/--dim/--z`) on `requestAnimationFrame` (same pattern as `CardMedia`); React state holds only the active index. **Reuses `CardMedia` unchanged** — its cursor 3D-tilt (`rotateX/Y` inside `perspective:800px`) composes on top of the 2D scatter. **Reduced-motion / SSR:** scatter stays off until after mount and entirely under `prefers-reduced-motion`, degrading to an upright horizontal scroll row. Home-only; gallery masonry (§2.9) is unchanged. See §2.10 + §6.
 
@@ -162,7 +168,7 @@ painting the void base; content sits in `.stage` at `relative z-10`.
 - `.veil` — now a **transparent no-op hook** kept on gallery / detail / wishlist / admin / footer sections. It used to darken lower content to `ink`, which made the background look "mixed" (colorful hero, flat-dark body); that was removed so the fixed aurora reads consistently. Legibility comes from the aurora's own center vignette + centered content columns.
 
 ### 2.3 Navigation — floating glass pill (`components/Navbar.tsx`)
-Sticky, centered, `max-w-1240px`, `rounded-full`, `.glass-nav` (heavier frost than `.glass`), h-14/16. Serif wordmark left (also links Home `/`); `.tracked` links (Home · Gallery · Wishlist · About · Sell) center; search field + wishlist star (with `aurora-rose` count badge) right. Mobile: wordmark + star + hamburger → glass dropdown panel with search + links.
+Sticky, centered, `max-w-1240px`, `rounded-full`, `.glass-nav` (heavier frost than `.glass`), h-14/16. Serif wordmark `Second Life°` left (also links Home `/`); `.tracked` links (Home · Gallery · Wishlist · About · Sell) center; search field + wishlist star (with `aurora-rose` count badge) right. Mobile: wordmark + star + hamburger → glass dropdown panel with search + links.
 
 ### 2.4 Item card — living-gallery showcase (`components/ItemCard.tsx` + `components/CardMedia.tsx`)
 Large **portrait 3:4** image, `rounded-6px`, hairline ring. Below image, left-aligned: category eyebrow (`.tracked` fg-faint) · serif title (22px) · row of IDR price + condition glass chip.

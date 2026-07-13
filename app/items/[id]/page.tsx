@@ -128,7 +128,7 @@ export default async function ItemDetailPage({ params }: Props) {
           <div className="mt-12 border-t border-hairline pt-7">
             <p className="tracked text-[10px] text-fg-faint">Seller</p>
             <p className="mt-2 font-serif text-[22px] font-medium text-fg">
-              Akbar
+              Give It the Second Life
             </p>
             <p className="mt-1.5 text-[14px] text-fg-muted">
               Curating and rehoming well-loved pieces so they can live a second

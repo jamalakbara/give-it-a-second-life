@@ -59,7 +59,7 @@ function NavbarInner() {
           href="/"
           className="font-serif text-[19px] font-medium tracking-tight text-fg md:text-[22px]"
         >
-          Selling Preloved
+          Second Life&deg;
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex" aria-label="Main">

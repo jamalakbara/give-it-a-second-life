@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 const MISSION =
-  "We give well-made things a second life. Selling Preloved Items is a curated, gallery-first home for preloved pieces of every kind — clothing, tech, homeware, and the occasional rare find — chosen for character, not volume.";
+  "We give well-made things a second life. Give It the Second Life is a curated, gallery-first home for preloved pieces of every kind — clothing, tech, homeware, and the occasional rare find — chosen for character, not volume.";
 
 export const metadata: Metadata = {
   title: "About",
   description: MISSION,
   alternates: { canonical: "/about" },
   openGraph: {
-    title: "About | Selling Preloved Items",
+    title: "About | Give It the Second Life",
     description: MISSION,
     url: "/about",
     type: "website",
@@ -25,7 +25,7 @@ const STEPS = [
   {
     n: "02",
     title: "Message the seller",
-    body: "Found something? Tap through to WhatsApp and talk to Akbar directly. No accounts, no checkout maze.",
+    body: "Found something? Tap through to WhatsApp and talk to us directly. No accounts, no checkout maze.",
   },
   {
     n: "03",
@@ -39,16 +39,15 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "AboutPage",
-      name: "About | Selling Preloved Items",
+      name: "About | Give It the Second Life",
       description: MISSION,
       url: "/about",
     },
     {
       "@type": "Organization",
-      name: "Selling Preloved Items",
+      name: "Give It the Second Life",
       description: MISSION,
       url: "/",
-      founder: { "@type": "Person", name: "Akbar" },
     },
   ],
 };
@@ -117,13 +116,15 @@ export default function AboutPage() {
         {/* Seller intro */}
         <section className="mt-24 max-w-[760px] border-t border-hairline pt-14">
           <p className="tracked text-[10px] text-fg-faint">The curator</p>
-          <h2 className="mt-4 font-serif text-h2 font-medium text-fg">Akbar</h2>
+          <h2 className="mt-4 font-serif text-h2 font-medium text-fg">
+            Curated with care
+          </h2>
           <p className="mt-6 text-[16px] leading-relaxed text-fg-muted">
-            I&apos;m Akbar. I curate and rehome well-loved pieces so they can
-            live a second life. Everything in this gallery is something I chose,
-            photographed, and would happily keep myself — I just believe good
-            things are meant to keep moving. If a piece speaks to you, message
-            me and let&apos;s find it a new home.
+            We curate and rehome well-loved pieces so they can live a second
+            life. Everything in this gallery is chosen, photographed, and good
+            enough to keep — we just believe good things are meant to keep
+            moving. If a piece speaks to you, message us and let&apos;s find it a
+            new home.
           </p>
         </section>
 
