@@ -2,7 +2,11 @@
 
 **Design Reference:** jackwatkins.co/works (live, inspected July 2026)
 **Aesthetic:** Dark "living gallery" — near-black stage, drifting aurora glow, high-contrast serif display, glassmorphic UI, large staggered imagery
-**Status:** MVP Design System — v2.13 (gallery loads in batches on scroll — infinite scroll with skeleton-card placeholders)
+**Status:** MVP Design System — v2.15 (home "Latest arrivals" is now a scattered scroll-snap carousel)
+
+> **Note (v2.15):** The home **preview strip** "Latest arrivals" is now a **scattered carousel** (`components/ArrivalsCarousel.tsx`) instead of a static grid — matched to the Gucci-Beauty reference. A horizontal **scroll-snap** track of the 6 newest 280px cards where each **fans out** the further its center sits from the track's viewport center: `rotate` up to **±7°**, `translateY` up to **22px** (side cards drop below the centered one), `scale` down to **~0.86**, and `brightness` down to **~0.5**. Cards use `CardMedia`'s **`blendEdges`** treatment (rounder corners + feather vignette + bloom shadow) so they melt into the aurora. The **centered card** is upright, largest and brightest; cards **peek** off both edges (side padding `calc((100% − 300px)/2)`, 300px cards). A **single centered caption** (category · serif title · price · condition chip) shows the **active** card only; below it, **progress dashes** (active = 28px wide `#e0533d`, others 14px hairline, click smooth-scrolls that card to center) and a "Swipe to discover" hint. All per-frame transforms are written to CSS vars (`--rot/--ty/--scale/--dim/--z`) on `requestAnimationFrame` (same pattern as `CardMedia`); React state holds only the active index. **Reuses `CardMedia` unchanged** — its cursor 3D-tilt (`rotateX/Y` inside `perspective:800px`) composes on top of the 2D scatter. **Reduced-motion / SSR:** scatter stays off until after mount and entirely under `prefers-reduced-motion`, degrading to an upright horizontal scroll row. Home-only; gallery masonry (§2.9) is unchanged. See §2.10 + §6.
+
+> **Note (v2.14):** The site now has a **dedicated home page** at `/` and the gallery moved to **`/gallery`**. The home page is intentionally minimal to funnel visitors into the gallery: a tall centered **hero** (eyebrow + one serif line "A living gallery." + one-line subhead + a **cream "Enter the gallery" CTA pill**), followed by a **preview strip** — a heading row ("Latest arrivals" + "View the full gallery →") over the 6 newest items (see §2.10 for the current carousel treatment; originally a 2-col / md:3-col grid). The **gallery hero** was simplified to match the reference exactly: just the tracked eyebrow + a single serif `<h1>` ("Preloved treasures."), with the old descriptive paragraph removed. Both surfaces reuse existing tokens/components only. See §6 Implementation Map.
 
 > **Note (v2.13):** The gallery grid now loads via **infinite scroll** (`components/ItemGrid.tsx`) instead of rendering the whole catalog at once. The first batch of **8** is server-rendered; an `IntersectionObserver` sentinel (`rootMargin: 600px`) appends the next 8 as the user nears the bottom. While a batch loads, **skeleton cards** — a `.skeleton` `aspect-[3/4]` media box + two shimmer text lines, matching `ItemCard`'s footprint — fill the column tails so nothing shifts. The two-column staggered masonry now lives in `ItemGrid` (moved out of `app/page.tsx`). See §2.9.
 
@@ -158,7 +162,7 @@ painting the void base; content sits in `.stage` at `relative z-10`.
 - `.veil` — now a **transparent no-op hook** kept on gallery / detail / wishlist / admin / footer sections. It used to darken lower content to `ink`, which made the background look "mixed" (colorful hero, flat-dark body); that was removed so the fixed aurora reads consistently. Legibility comes from the aurora's own center vignette + centered content columns.
 
 ### 2.3 Navigation — floating glass pill (`components/Navbar.tsx`)
-Sticky, centered, `max-w-1240px`, `rounded-full`, `.glass-nav` (heavier frost than `.glass`), h-14/16. Serif wordmark left; `.tracked` links (Gallery · Wishlist · Sell) center; search field + wishlist star (with `aurora-rose` count badge) right. Mobile: wordmark + star + hamburger → glass dropdown panel with search + links.
+Sticky, centered, `max-w-1240px`, `rounded-full`, `.glass-nav` (heavier frost than `.glass`), h-14/16. Serif wordmark left (also links Home `/`); `.tracked` links (Home · Gallery · Wishlist · About · Sell) center; search field + wishlist star (with `aurora-rose` count badge) right. Mobile: wordmark + star + hamburger → glass dropdown panel with search + links.
 
 ### 2.4 Item card — living-gallery showcase (`components/ItemCard.tsx` + `components/CardMedia.tsx`)
 Large **portrait 3:4** image, `rounded-6px`, hairline ring. Below image, left-aligned: category eyebrow (`.tracked` fg-faint) · serif title (22px) · row of IDR price + condition glass chip.
@@ -169,6 +173,8 @@ Large **portrait 3:4** image, `rounded-6px`, hairline ring. Below image, left-al
 1. **3D tilt ("bottle-cap press")** — outer `[perspective:800px]`, inner media div rotates `rotateX/rotateY` from the normalized cursor offset so the point under the pointer recedes and the far side lifts. `MAX_TILT = 2.5°` (reference is a subtle 2–6°; tune this one constant). Eased `transform 0.6s cubic-bezier(0.16,1,0.3,1)`; resets to flat on leave.
 2. **Magnetic "View Item" pill** — a **liquid-glass** pill (`bg-white/15`, `backdrop-filter blur(14px) saturate(1.4)`, `border-white/25`, soft shadow `0 8px 28px -6px rgba(0,0,0,0.55)`, white text, `whitespace-nowrap`) so it reads clearly over any image — brighter than the standard `.glass`. It trails the cursor via a GPU `transform` reading live `--px/--py` vars (`400ms cubic-bezier(0.22,1,0.36,1)`), scales `0.85→1` + fades in on hover, home = center, fades out on leave. The pill center is **clamped** to the card bounds (measured pill half-size + 8px gap) so it never gets clipped by the `overflow-hidden` rounded edge when the cursor rides the border. Sits above the tilt layer.
 3. Image itself is undimmed on hover (reference does not darken).
+
+**`blendEdges` prop (opt-in):** for cards shown on the bare aurora (the home carousel, §2.10) `CardMedia` accepts `blendEdges` — rounds corners to `rounded-[14px]`, softens/blooms the shadow, and adds a non-interactive feather vignette (warm-void radial) so the photo melts into the background. Default off; gallery/wishlist keep the crisp `rounded-[6px]` card.
 
 **Sold-out overlay (`isSold`):** sold items stay in the catalog. When `item.isSold`, `CardMedia` grays the cover slightly (`grayscale-[0.4]`) and lays a non-interactive veil (`inset-0 bg-black/45`, `pointer-events-none` so the card stays clickable) with a **centered "Sold out" tag** — a `.tracked` uppercase pill (`bg-black/45`, `border-white/25`, `backdrop-filter blur(6px)`, white 11px text, same soft shadow as the View Item pill). Sits above the image, below the wishlist star.
 
@@ -225,9 +231,9 @@ shadow. The grip is disabled while that row's edit form is open.
 The single standard for **every content image** on the site. Wraps `next/image` in `fill` mode and bakes in the loading treatment so no call site re-implements it:
 
 - **Skeleton** — while the image decodes, a `.skeleton` sibling (`absolute inset-0`, the shimmer gradient `--color-glass`→`--color-glass-strong`, `shimmer` keyframe 1.4s) fills the frame. DOM order (skeleton first, `<Image>` second) means the loaded, opaque image paints on top — no z-index needed. Disabled under `prefers-reduced-motion`.
-- **Fade-in** — the image is `opacity-0` until its `onLoad`, then transitions to `opacity-100` over `duration-500`.
-- **Lazy-load** — non-`priority` images keep `next/image`'s native `loading="lazy"`, so below-the-fold images only fetch on approach. Only the item-detail main gallery image passes `priority` (above the fold).
-- **API** — `src, alt, sizes, className, priority?, draggable?, objectFit?` (`"cover"` default, `"contain"` for the lightbox). The **caller owns** the positioned/rounded/ring container (all call sites already provide a `relative` box).
+- **Fade-in** — the image is `opacity-0` until it loads, then transitions to `opacity-100` over `duration-500`. Load is detected two ways: `onLoad`, **and** a mount effect that looks up the sibling `<img>` and flips to loaded if it is already `complete` (or attaches a native `load` listener). This covers eager/cached images that finish before React attaches `onLoad` — otherwise they stay stuck invisible.
+- **Lazy vs eager** — non-`priority` images keep `next/image`'s native `loading="lazy"`. Pass **`eager`** to force `loading="eager"` (no preload) for off-screen-but-imminent images the user will swipe to — the home carousel (§2.10) sets it on all 6 slides so swiping never reveals a blank glass box. Only the item-detail main gallery image passes `priority` (above the fold).
+- **API** — `src, alt, sizes, className, priority?, eager?, draggable?, objectFit?` (`"cover"` default, `"contain"` for the lightbox). The **caller owns** the positioned/rounded/ring container (all call sites already provide a `relative` box).
 - **Call sites** — `CardMedia` (catalog cards), `ImageGallery` (main + thumbnails + lightbox), and the admin surfaces `MediaPicker` / `SortableImageGrid` / `AdminItemList` (which previously used plain `<img>` — now optimized + lazy).
 
 ### 2.9 Infinite-scroll gallery (`components/ItemGrid.tsx`)
@@ -239,6 +245,19 @@ The gallery no longer renders the whole catalog at once — it loads in batches 
 - **Skeleton cards** — while a batch loads, `pageSize` **`CardSkeleton`** placeholders fill the two column tails (split ⌈n/2⌉ left / ⌊n/2⌋ right). Each is a `.skeleton` `aspect-[3/4] rounded-[6px]` media box + two shimmer text lines (`h-3 w-1/3`, `h-5 w-3/4`), mirroring `ItemCard`'s footprint so there's no layout shift. Same shimmer as §2.8; disabled under `prefers-reduced-motion`.
 - **Filter/sort reset** — `app/page.tsx` mounts `ItemGrid` with `key={query}` (the filter querystring), so any filter/sort change remounts the grid and resets accumulated items + scroll state cleanly.
 - **Masonry** — the two-column staggered grid (previously inline in `app/page.tsx`) now lives in `ItemGrid`, unchanged geometry (§1.3, §2.4).
+
+### 2.10 Home "Latest arrivals" scattered carousel (`components/ArrivalsCarousel.tsx`)
+
+The home preview strip is a **Gucci-Beauty-style scattered carousel** (home-only; the gallery uses §2.9 masonry). It lives in a **pinned stage** — `app/page.tsx` renders the section as `relative min-h-[calc(50svh+36rem)]` containing a `sticky top-[max(6rem,calc((100svh-46rem)/2))]` wrapper. The fan pins at a top offset that centres it in the viewport but is **clamped to always clear the floating nav** (§2.3), so the active card holds below the nav and can't ride up under it — independent of viewport height or where the user rests (free-scroll centering alone failed this). The section height uses `50svh + 36rem` (not a plain `Nvh`) so the sticky `top` offset — which grows with the viewport — cancels the `svh` term, giving a **short, ~constant pin hold (~190px)** rather than a long dead-zone that scales with the screen (a tall `185vh` earlier froze page scroll for ~1000px). It releases once the user scrolls that short range past. A horizontal **scroll-snap** (`snap-x snap-mandatory`) `<ul>` track of the 6 newest items, `overflow-x-auto` with the scrollbar hidden (`.scrollbar-none` in `app/globals.css`); all 6 slides load **`eager`** (§2.8) so swiping never flashes a blank card.
+
+- **Scatter (the signature)** — a `requestAnimationFrame`-throttled `scroll`/`resize` handler measures each slide's center vs the track's viewport center, normalizes the distance `d ∈ [−1, 1]`, and writes CSS vars on the slide: `--rot = d·7deg`, `--ty = |d|·22px`, `--scale = 1 − |d|·0.14`, `--dim = 1 − |d|·0.5`, `--z`. Slide transform = `translateY(var(--ty)) rotate(var(--rot)) scale(var(--scale))`, `filter: brightness(var(--dim))`, `transform-origin: center bottom`, eased `0.6s cubic-bezier(0.22,1,0.36,1)`. Net effect: the **centered** card is upright/largest/brightest, neighbors fan out, tilt, drop and dim.
+- **Edge blend** — cards are shown on the bare aurora (not the darker `.veil`), so `CardMedia` is passed `blendEdges`: corners round to **`rounded-[14px]`**, the shadow is a single **warm-tinted, tight, low-opacity** contact shadow (`0 22px 44px -26px rgba(18,12,6,0.5)`) — deliberately small so the three cards' shadows don't merge into a dark grey rectangle over the vibrant aurora — and a non-interactive **feather vignette** (`radial-gradient(118% 128% at 50% 42%, transparent 50%, rgba(20,16,11,0.5) 100%)` — the warm void tone) fades the bright photo toward the border so it melts into the aurora instead of reading as a hard rectangle. Gallery/wishlist cards keep the crisp `rounded-[6px]` treatment (`blendEdges` off).
+- **Peek + edge fade** — **280px** cards (~373px tall), `gap-6 md:gap-10`, side padding `max(1rem, calc((100% − 280px)/2))` so the active card snap-centres while neighbours peek. The track **breaks out of the 1120 container to the full section width** (`app/page.tsx` renders `<ArrivalsCarousel>` as a sibling of the centred header, not inside it) so peeking cards reach the screen edges, and a horizontal **mask** (`linear-gradient(to right, transparent, #000 8%, #000 92%, transparent)`) fades them out so they dissolve into the aurora instead of hard-clipping mid-section. Header + caption stay in the centred `max-w-[1120px]` container.
+- **Default focus** — on mount the track scrolls (instantly) so the **middle** slide (`floor(n/2)`) is centred/active, not the first.
+- **Active caption** — a single centered block below the track shows the **active** card only (`.tracked` category · serif `24px` title · price + condition chip). Active index = slide with smallest `|d|`, held in React state (updated on settle, not per frame).
+- **Progress dashes** — one `<button>` per item; active = 28px wide `#e0533d`, others 14px `--color-hairline`; click smooth-scrolls that card to center (`scrollIntoView({ inline: 'center' })`). Plus a `.tracked` "Swipe to discover" hint.
+- **Reuses `CardMedia` unchanged** — its hover 3D-tilt (`rotateX/Y` in `perspective:800px`) + magnetic pill + wishlist star compose on top of the outer 2D scatter (different transform contexts, no conflict).
+- **Reduced-motion / SSR** — scatter is off until after mount (upright first paint, no flash) and stays off entirely under `prefers-reduced-motion`, degrading to a plain upright horizontal scroll row.
 
 ---
 
@@ -259,6 +278,7 @@ Aurora (primary) : WebGL mesh-gradient, speed 0.18 (slow/subtle) — components/
 Aurora (fallback): CSS blobs drift 22–32s ease-in-out, infinite, independent per blob
 Card 3D tilt    : transform 0.6s cubic-bezier(0.16,1,0.3,1)   (perspective 800px)
 Card pill trail : left/top 400ms cubic-bezier(0.22,1,0.36,1) + opacity 300ms
+Arrivals scatter: per-slide transform/filter 0.6s cubic-bezier(0.22,1,0.36,1), driven by rAF scroll (§2.10)
 Hero entrance   : `rise` 0.9s (fade + 24px up)
 Reduced-motion  : shader replaced by static CSS aurora; all drift/rise disabled
 ```
@@ -285,7 +305,8 @@ components/AuroraGL.tsx → WebGL fluid mesh-gradient background (@paper-design/
 components/Aurora.tsx   → static CSS-blob aurora (fallback: SSR / reduced-motion / no-WebGL)
 components/Navbar.tsx   → glass pill nav
 components/ItemGrid.tsx → client masonry + infinite scroll (IntersectionObserver + skeleton cards)
-components/ItemCard.tsx → showcase card (meta + wishlist + <CardMedia>)
+components/ItemCard.tsx → showcase card (meta + wishlist + <CardMedia>) — used by gallery + wishlist
+components/ArrivalsCarousel.tsx → home "Latest arrivals" scattered scroll-snap carousel (rAF scatter, active caption, dashes)
 components/CardMedia.tsx→ card image + 3D tilt + magnetic cursor-following pill
 components/SmoothImage.tsx → standard image primitive (next/image fill + skeleton shimmer + fade-in + lazy)
 components/FilterBar.tsx→ glass filter toolbar
@@ -297,7 +318,8 @@ components/ItemForm.tsx → admin create/edit form (dual-mode, +Add images butto
 components/MediaPicker.tsx → modal picker: Gallery (reuse Cloudinary uploads) + Upload tabs
 components/SortableImageGrid.tsx → drag-to-reorder image thumbnails (@dnd-kit, cover badge)
 components/AdminItemList.tsx → admin item list (drag-reorder rows, sold badge, edit + inline delete confirm)
-app/page.tsx           → hero + staggered gallery
+app/page.tsx           → home: minimal hero + cream CTA + "Latest arrivals" scattered carousel (§2.10) → /gallery
+app/gallery/page.tsx   → gallery: single-line hero (eyebrow + serif <h1>) + FilterBar + staggered infinite-scroll grid
 app/about/page.tsx     → static About page (hero + mission + 3 glass how-it-works cards + seller intro + CTA); reuses existing tokens only
 app/admin/page.tsx     → password gate + create form + AdminItemList
 app/items/[id]/page.tsx→ detail

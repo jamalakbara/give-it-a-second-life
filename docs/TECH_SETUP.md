@@ -925,6 +925,58 @@ schema) with a `@graph` of two nodes:
 
 ---
 
+## Part 15: Home Page & Gallery Route Split
+
+Splits the old single-route storefront into a **home page** (`/`) and a **gallery**
+(`/gallery`), so `/` can be a simple funnel while `/gallery` holds the full filter/search
+grid. Adds a shared SEO module and a standing SEO rule.
+
+### 15.1 Routes
+
+- **`app/gallery/page.tsx`** — the previous root gallery, moved verbatim (async Server
+  Component: server-renders the first batch of 8, then `ItemGrid` infinite-scrolls). Its
+  hero is simplified to match the reference: tracked eyebrow + a single serif `<h1>`
+  ("Preloved treasures."), the old descriptive paragraph removed. Adds a `metadata` export
+  (`title: "Gallery"`, keyword description, `alternates.canonical: "/gallery"`, `openGraph`)
+  and inline `CollectionPage` JSON-LD.
+- **`app/page.tsx`** — the new **home**. Server Component that fetches the 6 newest items
+  (`getItems({ limit: 6, offset: 0 })`) for a preview strip of `ItemCard`s under a minimal
+  hero + cream **"Enter the gallery"** CTA. No FilterBar, no infinite scroll. `metadata`
+  (description, canonical `/`, `openGraph`) + `@graph` JSON-LD of `WebSite` (with a
+  `SearchAction` pointing at `/gallery?q=`) and `Organization`.
+
+### 15.2 Link & search rewiring
+
+Because the gallery is no longer at `/`, all gallery-bound navigation was repointed:
+
+- `components/Navbar.tsx` — `NAV_LINKS` "Gallery" → `/gallery`; the logo still points at `/`.
+  The search field now pushes to `/gallery?q=…` (search lands on the gallery from any page).
+- `components/FilterBar.tsx` — uses `usePathname()` for its `router.push` target and the
+  Clear link, so filters/sort stay on whatever route hosts the bar (`/gallery`).
+- `components/Footer.tsx` — footer "Gallery" link → `/gallery`.
+- `app/about/page.tsx` — CTA → `/gallery`.
+
+### 15.3 Shared SEO module — `lib/seo.ts`
+
+Single source for `SITE_NAME`, `SITE_URL` (reads `NEXT_PUBLIC_SITE_URL`), a `canonical(path)`
+helper, and `websiteJsonLd` / `organizationJsonLd` builders. Consumed by `app/layout.tsx`
+(`metadataBase`, default description), `app/page.tsx` (JSON-LD), `app/sitemap.ts`, and
+`app/robots.ts` — replacing the base-URL literals those files each defined.
+
+### 15.4 Discovery
+
+- `app/sitemap.ts` — adds `/gallery` (`changeFrequency: "daily"`, `priority: 0.9`); all
+  entries now use `canonical()`.
+- `app/robots.ts` — unchanged rules (still disallows `/admin`, `/api/`); uses `canonical()`.
+
+### 15.5 Standing SEO rule
+
+`.claude/rules/seo.md` — codifies that every public page ships metadata + the right JSON-LD,
+one keyword-bearing `<h1>`, image `alt`s, and that any route add/rename/remove updates
+`sitemap.ts`/`robots.ts` in the same task, with absolute URLs sourced from `lib/seo.ts`.
+
+---
+
 ## Quick Start Checklist (MVP)
 
 - [ ] Create Neon account & database

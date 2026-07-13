@@ -12,7 +12,8 @@ export function Footer() {
           </p>
           <nav className="flex gap-7" aria-label="Footer">
             {[
-              { href: "/", label: "Gallery" },
+              { href: "/", label: "Home" },
+              { href: "/gallery", label: "Gallery" },
               { href: "/wishlist", label: "Wishlist" },
               { href: "/about", label: "About" },
               { href: "/admin", label: "Sell" },

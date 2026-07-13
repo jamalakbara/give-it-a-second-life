@@ -43,8 +43,19 @@ The platform will transition to a revenue model once multi-seller functionality 
 ### MVP Features (Phase 1)
 
 #### 3.1 Core Functionality
-- **Item Showcase Gallery**
+- **Home Page** (`/`)
+  - A deliberately simple landing page that funnels visitors toward the gallery
+  - Minimal hero (eyebrow + single serif line + one-line subhead) with a single
+    **"Enter the gallery"** CTA
+  - A small **"Latest arrivals"** preview strip — the 6 newest items as cards, with a
+    "View the full gallery →" link (real content + internal links for SEO, without the
+    weight of the full gallery)
+  - SEO: page description, canonical `/`, Open Graph, and `WebSite` (+ `SearchAction`)
+    plus `Organization` JSON-LD; registered in the sitemap at priority 1
+
+- **Item Showcase Gallery** (moved to `/gallery`; `/` is now the home page)
   - Grid layout (inspired by Jack Watkins portfolio)
+  - Minimal single-line hero (eyebrow + serif `<h1>`), matching the reference
   - 2-4 columns responsive design
   - High-resolution images with hover overlays
   - Item metadata: title, description, category, price, condition
@@ -356,9 +367,13 @@ visitors landing from search or an item link understand *why* the gallery exists
 - Meta titles: "[Brand] [Item] | Preloved [Category] – Selling Preloved Items"
 - Meta descriptions: Include condition, size, price, brand
 - Alt text for all images
-- Structured data: `Product` schema on item pages; `AboutPage` + `Organization` on `/about`
+- Structured data per page type: `Product` on item pages; `CollectionPage` on `/gallery`;
+  `WebSite` (+ `SearchAction`) and `Organization` on `/`; `AboutPage` + `Organization` on `/about`
+- Every public page carries a unique `<h1>`, title, description, canonical, and Open Graph
 - `metadataBase` set on the root layout so Open Graph / canonical URLs resolve absolutely
-- Sitemap includes home, `/about`, `/wishlist`, and every item page
+- Absolute URLs + shared JSON-LD builders live in `lib/seo.ts` (single source, reads `NEXT_PUBLIC_SITE_URL`)
+- Sitemap includes home `/`, `/gallery`, `/about`, `/wishlist`, and every item page
+- SEO is enforced as a standing rule for all future work — see `.claude/rules/seo.md`
 
 ---
 

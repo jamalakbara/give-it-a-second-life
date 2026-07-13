@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuroraGL } from "@/components/AuroraGL";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { SITE_DESCRIPTION, SITE_URL } from "@/lib/seo";
 
 const playfair = Playfair_Display({
   variable: "--font-playfair",
@@ -18,15 +19,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-  ),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Selling Preloved Items — A living gallery of preloved treasures",
     template: "%s | Selling Preloved Items",
   },
-  description:
-    "Discover preloved treasures. Extend the lifecycle of well-made things. A curated gallery of preloved pieces — clothing, tech, homeware, and more.",
+  description: SITE_DESCRIPTION,
 };
 
 export default function RootLayout({

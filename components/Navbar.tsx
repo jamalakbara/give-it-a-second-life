@@ -7,7 +7,8 @@ import { useWishlist } from "@/hooks/useWishlist";
 import { StarIcon, SearchIcon, MenuIcon, CloseIcon } from "@/components/icons";
 
 const NAV_LINKS = [
-  { href: "/", label: "Gallery" },
+  { href: "/", label: "Home" },
+  { href: "/gallery", label: "Gallery" },
   { href: "/wishlist", label: "Wishlist" },
   { href: "/about", label: "About" },
   { href: "/admin", label: "Sell" },
@@ -27,7 +28,9 @@ function SearchField({ onDone }: { onDone?: () => void }) {
         const params = new URLSearchParams(searchParams.toString());
         if (value.trim()) params.set("q", value.trim());
         else params.delete("q");
-        router.push(`/?${params.toString()}`);
+        // Search always lands on the gallery, from any page.
+        const qs = params.toString();
+        router.push(qs ? `/gallery?${qs}` : "/gallery");
         onDone?.();
       }}
     >

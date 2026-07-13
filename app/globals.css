@@ -147,6 +147,10 @@ body {
 
 input[type="search"]::-webkit-search-cancel-button { display: none; }
 
+/* Hide the horizontal scrollbar on the arrivals carousel (still scroll/swipeable) */
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
 /* Tailwind v4 Preflight drops the default button cursor — restore it project-wide */
 button:not(:disabled),
 select:not(:disabled),

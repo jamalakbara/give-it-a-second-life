@@ -21,12 +21,21 @@ export function CardMedia({
   title,
   itemId,
   isSold = false,
+  blendEdges = false,
+  eager = false,
 }: {
   href: string;
   cover?: ItemImage;
   title: string;
   itemId: number;
   isSold?: boolean;
+  // When shown over the bare aurora (home carousel) the bright photo reads as a
+  // hard "sticker". blendEdges rounds the corners more, softens/blooms the
+  // shadow, and feathers the image edges toward the warm void so it melts in.
+  blendEdges?: boolean;
+  // Load the cover immediately (carousel slides the user swipes to) instead of
+  // lazily — otherwise off-screen cards flash an empty glass box on reveal.
+  eager?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
@@ -108,12 +117,19 @@ export function CardMedia({
       className="group relative block [perspective:800px]"
     >
       <div
-        className="relative aspect-[3/4] overflow-hidden rounded-[6px] bg-glass ring-1 ring-hairline [transform-style:preserve-3d]"
+        className={`relative aspect-[3/4] overflow-hidden bg-glass ring-1 ring-hairline [transform-style:preserve-3d] ${
+          blendEdges ? "rounded-[14px]" : "rounded-[6px]"
+        }`}
         style={{
           transform: "rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg))",
           transition: "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
           willChange: "transform",
-          boxShadow: "0 26px 55px -22px rgba(0, 0, 0, 0.7)",
+          boxShadow: blendEdges
+            ? // Warm-tinted (toward the void #14100b), tight + low-opacity so the
+              // three cards' shadows don't merge into a dark grey rectangle over
+              // the aurora — just a soft contact shadow that blends in.
+              "0 22px 44px -26px rgba(18, 12, 6, 0.5)"
+            : "0 26px 55px -22px rgba(0, 0, 0, 0.7)",
         }}
       >
         {cover && (
@@ -121,7 +137,22 @@ export function CardMedia({
             src={cover.url}
             alt={cover.alt}
             sizes="(max-width: 767px) 100vw, 480px"
+            eager={eager}
             className={isSold ? "grayscale-[0.4]" : ""}
+          />
+        )}
+
+        {/* Edge feather — fades the bright photo toward the warm void at the
+            border so the card melts into the aurora instead of reading as a
+            hard rectangle. Non-interactive, sits above the image. */}
+        {blendEdges && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-[1]"
+            style={{
+              background:
+                "radial-gradient(118% 128% at 50% 42%, transparent 50%, rgba(20, 16, 11, 0.5) 100%)",
+            }}
           />
         )}
 

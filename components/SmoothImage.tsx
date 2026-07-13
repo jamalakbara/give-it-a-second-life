@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Standard image primitive for the site: renders a `next/image` in `fill`
 // mode with the shared `.skeleton` shimmer (app/globals.css) shown while the
@@ -18,6 +18,7 @@ export function SmoothImage({
   sizes,
   className = "",
   priority = false,
+  eager = false,
   draggable,
   objectFit = "cover",
 }: {
@@ -26,15 +27,40 @@ export function SmoothImage({
   sizes?: string;
   className?: string;
   priority?: boolean;
+  // Load immediately (no lazy defer) without the preload of `priority` — for
+  // off-screen-but-imminent images like carousel slides the user will swipe to.
+  eager?: boolean;
   draggable?: boolean;
   objectFit?: "cover" | "contain";
 }) {
   const [loaded, setLoaded] = useState(false);
+  const skelRef = useRef<HTMLDivElement>(null);
+
+  // Eager/cached images can finish loading before React attaches `onLoad`
+  // (the load event fires during the SSR→hydration gap), leaving `loaded`
+  // stuck false and the image invisible. On mount, look up the sibling <img>
+  // (next/image doesn't reliably forward a ref here) and catch the
+  // already-complete case.
+  useEffect(() => {
+    const img = skelRef.current?.parentElement?.querySelector("img");
+    if (!img) return;
+    if (img.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+      return;
+    }
+    const onDone = () => setLoaded(true);
+    img.addEventListener("load", onDone);
+    return () => img.removeEventListener("load", onDone);
+  }, []);
 
   return (
     <>
       {!loaded && (
-        <div className="skeleton absolute inset-0" aria-hidden="true" />
+        <div
+          ref={skelRef}
+          className="skeleton absolute inset-0"
+          aria-hidden="true"
+        />
       )}
       <Image
         src={src}
@@ -42,6 +68,7 @@ export function SmoothImage({
         fill
         sizes={sizes}
         priority={priority}
+        loading={!priority && eager ? "eager" : undefined}
         draggable={draggable}
         onLoad={() => setLoaded(true)}
         className={`${

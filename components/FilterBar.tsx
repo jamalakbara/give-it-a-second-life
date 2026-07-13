@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   CATEGORIES,
@@ -43,6 +43,7 @@ function toggleValue(current: string | null, value: string): string[] {
 
 export function FilterBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [showConditions, setShowConditions] = useState(false);
 
@@ -58,7 +59,7 @@ export function FilterBar() {
     const params = new URLSearchParams(searchParams.toString());
     mutate(params);
     const qs = params.toString();
-    router.push(qs ? `/?${qs}` : "/");
+    router.push(qs ? `${pathname}?${qs}` : pathname);
   }
 
   function toggleList(key: "category" | "condition", value: string) {
@@ -110,7 +111,7 @@ export function FilterBar() {
 
         {hasFilters && (
           <Link
-            href="/"
+            href={pathname}
             className="tracked text-[10px] text-fg-faint underline-offset-4 transition-colors hover:text-fg hover:underline"
           >
             Clear

@@ -133,7 +133,7 @@ export default function AboutPage() {
             Something in here is waiting for you.
           </h2>
           <Link
-            href="/"
+            href="/gallery"
             className="tracked mt-7 inline-flex min-h-[48px] items-center justify-center rounded-full bg-cream px-8 py-3 text-[11px] text-void transition hover:bg-white"
           >
             Explore the gallery
