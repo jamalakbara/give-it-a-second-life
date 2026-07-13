@@ -2,7 +2,19 @@
 
 **Design Reference:** jackwatkins.co/works (live, inspected July 2026)
 **Aesthetic:** Dark "living gallery" — near-black stage, drifting aurora glow, high-contrast serif display, glassmorphic UI, large staggered imagery
-**Status:** MVP Design System — v2.26 (slimmer, centered admin top bar)
+**Status:** MVP Design System — v2.27 (themed Clerk auth UI — opaque dark cards)
+
+> **Note (v2.27):** Clerk's UI (`<UserButton>` popover, sign-in redirect page, modals) is now
+> **skinned to the theme** via `appearance` on `<ClerkProvider>` (`app/layout.tsx`), replacing
+> Clerk's default light chrome. `variables` set the palette (accent `#e0533d`, opaque dark card
+> fill `colorBackground: rgba(26,20,13,0.9)` (ink) so full-panel modals stay readable, a
+> `colorModalBackdrop` void scrim at `0.72`, cream foreground, glass input fill, `0.75rem` radius,
+> `--font-clash`); `elements` reuse existing utilities — `card`/`userButtonPopoverCard` get
+> `backdrop-blur-xl border-hairline` (dark fill from `colorBackground`, no cream glass tint),
+> inputs + social buttons get `border-hairline`, the primary button is `bg-accent text-void .tracked`,
+> and headings use `font-serif`. No new tokens or components. Uses Clerk v7 variable names
+> (`colorForeground`, `colorMutedForeground`, `colorInput`, `colorInputForeground`,
+> `colorPrimaryForeground`).
 
 > **Note (v2.26):** The admin top bar is now **narrower than the public navbar** and its tabs
 > are **truly centered**. Width capped at `max-w-[760px]` (from `1240px`) so the pill hugs its

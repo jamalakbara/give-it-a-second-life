@@ -45,7 +45,41 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        variables: {
+          colorPrimary: "#e0533d",
+          colorPrimaryForeground: "#14100b",
+          colorBackground: "rgba(26,20,13,0.9)",
+          colorModalBackdrop: "rgba(20,16,11,0.72)",
+          colorForeground: "#faf5ee",
+          colorMutedForeground: "rgba(250,245,238,0.55)",
+          colorInput: "rgba(250,245,238,0.06)",
+          colorInputForeground: "#faf5ee",
+          colorNeutral: "#faf5ee",
+          colorDanger: "#c2542f",
+          borderRadius: "0.75rem",
+          fontFamily: "var(--font-clash), system-ui, sans-serif",
+        },
+        elements: {
+          rootBox: "text-fg",
+          card: "rounded-3xl border border-hairline backdrop-blur-xl shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)]",
+          headerTitle: "font-serif text-cream",
+          headerSubtitle: "text-fg-muted",
+          socialButtonsBlockButton: "glass border-hairline text-fg hover:bg-glass-strong",
+          dividerLine: "bg-hairline",
+          dividerText: "tracked text-fg-faint",
+          formFieldLabel: "text-fg-muted",
+          formFieldInput: "glass border-hairline text-fg rounded-xl",
+          formButtonPrimary: "bg-accent hover:bg-[#c2542f] text-void tracked",
+          footerActionLink: "text-accent hover:text-[#c2542f]",
+          userButtonPopoverCard: "rounded-2xl border border-hairline backdrop-blur-xl",
+          userButtonPopoverMain: "bg-transparent",
+          userButtonPopoverFooter: "bg-transparent border-t border-hairline",
+          userButtonPopoverActionButton: "text-fg hover:bg-glass-strong",
+        },
+      }}
+    >
       <html
         lang="en"
         className={`${tanker.variable} ${boxing.variable} ${clashDisplay.variable} h-full antialiased`}
