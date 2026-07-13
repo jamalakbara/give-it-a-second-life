@@ -65,7 +65,10 @@ The platform will transition to a revenue model once multi-seller functionality 
     ←/→, Esc/click-outside close)
   - Shimmer **skeleton** while an image decodes so switching photos never shows a
     blank/laggy pop
-  - Complete item description
+  - Complete item description, rendered with structure — blank-line paragraphs,
+    `HEADER:` section titles, and `•`/`-`/`*` bullet lists parsed from the stored
+    plain text (no run-on flattening); long descriptions collapse behind a fade
+    with a "Read full description" toggle
   - Condition notes
   - Size/dimensions if applicable
   - "Contact via WhatsApp" button

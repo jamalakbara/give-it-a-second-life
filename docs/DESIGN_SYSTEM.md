@@ -209,7 +209,7 @@ which **auto-saves on drop** (`PATCH /api/items/reorder`); the dragged row lifts
 shadow. The grip is disabled while that row's edit form is open.
 
 ### 2.7 Item detail (`app/items/[id]/page.tsx`)
-`.veil` section, 55/45 two-column (image gallery left, info right; stacked on mobile). Info: category eyebrow → serif `text-h2` title → 26px IDR price + condition chip → muted description → spec list (tracked labels) → cream WhatsApp pill + glass wishlist button → seller block (Akbar). Product JSON-LD retained.
+`.veil` section, 55/45 two-column (image gallery left, info right; stacked on mobile). Info: category eyebrow → serif `text-h2` title → 26px IDR price + condition chip → structured description (`ItemDescription`: 16px/1.7 muted paragraphs in a `space-y-4` stack; `HEADER:` lines → `tracked` 11px `fg-faint` headings; `•`/`-`/`*` lines → bulleted list; collapses past 320px behind a `mask-image` gradient fade with a `tracked` "Read full description ▾" / "Show less ▴" toggle, shown only when content overflows) → spec list (tracked labels) → cream WhatsApp pill + glass wishlist button → seller block (Akbar). Product JSON-LD retained.
 
 ### 2.7.1 Image showcase — carousel + lightbox + skeleton (`components/ImageGallery.tsx`)
 - **Carousel arrows** — prev/next buttons overlaid on the main `aspect-[3/4]` frame (only when >1 image), vertically centered at `left-3` / `right-3`. Button style = `.glass grid size-10 place-items-center rounded-full text-fg backdrop-blur transition hover:text-cream hover:ring-1 hover:ring-cream` with an inline chevron SVG (no icon dep). Navigation wraps modulo image count. The thumbnail strip (`size-[76px]`, active `ring-2 ring-cream`) stays below and stays in sync.
@@ -266,6 +266,7 @@ components/FilterBar.tsx→ glass filter toolbar
 components/Button.tsx   → cream / glass pill variants
 components/form.tsx     → glass inputs
 components/Badge.tsx    → condition / category chips
+components/ItemDescription.tsx → parses plain-text description into paragraphs / headings / bullet lists; collapse + "read full" toggle (client)
 components/ItemForm.tsx → admin create/edit form (dual-mode, +Add images button, sold toggle)
 components/MediaPicker.tsx → modal picker: Gallery (reuse Cloudinary uploads) + Upload tabs
 components/SortableImageGrid.tsx → drag-to-reorder image thumbnails (@dnd-kit, cover badge)

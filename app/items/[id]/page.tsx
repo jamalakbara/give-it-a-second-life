@@ -9,6 +9,7 @@ import { formatPrice } from "@/lib/format";
 import { ImageGallery } from "@/components/ImageGallery";
 import { ConditionBadge } from "@/components/Badge";
 import { WishlistButton } from "@/components/WishlistButton";
+import { ItemDescription } from "@/components/ItemDescription";
 import { WhatsAppIcon } from "@/components/icons";
 
 type Props = { params: Promise<{ id: string }> };
@@ -83,9 +84,8 @@ export default async function ItemDetailPage({ params }: Props) {
             <ConditionBadge condition={item.condition} />
           </div>
 
-          <p className="mt-7 text-[16px] leading-[1.7] text-fg-muted">
-            {item.description}
-          </p>
+          <ItemDescription text={item.description} />
+
 
           {(item.size || item.color || item.material) && (
             <dl className="mt-7 space-y-2.5 border-t border-hairline pt-7 text-[14px]">
