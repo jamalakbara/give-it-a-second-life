@@ -2,7 +2,9 @@
 
 **Design Reference:** jackwatkins.co/works (live, inspected July 2026)
 **Aesthetic:** Dark "living gallery" — near-black stage, drifting aurora glow, high-contrast serif display, glassmorphic UI, large staggered imagery
-**Status:** MVP Design System — v2.12 (all content images unified under one `SmoothImage` primitive — skeleton shimmer + fade-in + native lazy-load)
+**Status:** MVP Design System — v2.13 (gallery loads in batches on scroll — infinite scroll with skeleton-card placeholders)
+
+> **Note (v2.13):** The gallery grid now loads via **infinite scroll** (`components/ItemGrid.tsx`) instead of rendering the whole catalog at once. The first batch of **8** is server-rendered; an `IntersectionObserver` sentinel (`rootMargin: 600px`) appends the next 8 as the user nears the bottom. While a batch loads, **skeleton cards** — a `.skeleton` `aspect-[3/4]` media box + two shimmer text lines, matching `ItemCard`'s footprint — fill the column tails so nothing shifts. The two-column staggered masonry now lives in `ItemGrid` (moved out of `app/page.tsx`). See §2.9.
 
 > **Note (v2.12):** Every content image now renders through a single reusable primitive, **`SmoothImage`** (`components/SmoothImage.tsx`) — `next/image` in `fill` mode with the shared `.skeleton` shimmer shown while decoding, cross-fading in on load, and native `loading="lazy"` on all non-`priority` images. It replaced the hand-rolled skeleton logic in `ImageGallery` and the bare `next/image` in `CardMedia`, and the plain `<img>` tags in the admin surfaces (`MediaPicker`, `SortableImageGrid`, `AdminItemList`) — so admin thumbnails are now optimized + lazy too. See §2.8.
 
@@ -172,7 +174,7 @@ Large **portrait 3:4** image, `rounded-6px`, hairline ring. Below image, left-al
 
 **Card shadow:** each card image carries a soft drop shadow `0 26px 55px -22px rgba(0,0,0,0.7)` to lift it off the aurora (matches the reference's subtle card shadow). It rides on the tilt layer, so it shifts naturally with the 3D tilt.
 
-**Layout:** two-column staggered grid (`app/page.tsx`) — 1120px container, `lg:gap-x-[160px]`, columns `lg:gap-40` (160px), right column `lg:mt-[254px]` — recreating the reference's alternating "living gallery" rhythm. 1 column on mobile. The same `ItemCard` is reused (3-col) on the wishlist page.
+**Layout:** two-column staggered grid (`components/ItemGrid.tsx`, mounted by `app/page.tsx`) — 1120px container, `lg:gap-x-[160px]`, columns `lg:gap-40` (160px), right column `lg:mt-[254px]` — recreating the reference's alternating "living gallery" rhythm. 1 column on mobile. The grid loads in batches via infinite scroll (§2.9). The same `ItemCard` is reused (3-col) on the wishlist page.
 
 ### 2.5 Buttons & chips
 - **Primary CTA** (`bg-cream text-void`, rounded-full, `.tracked`) — high-contrast light pill for the key action (WhatsApp, Subscribe).
@@ -228,6 +230,16 @@ The single standard for **every content image** on the site. Wraps `next/image` 
 - **API** — `src, alt, sizes, className, priority?, draggable?, objectFit?` (`"cover"` default, `"contain"` for the lightbox). The **caller owns** the positioned/rounded/ring container (all call sites already provide a `relative` box).
 - **Call sites** — `CardMedia` (catalog cards), `ImageGallery` (main + thumbnails + lightbox), and the admin surfaces `MediaPicker` / `SortableImageGrid` / `AdminItemList` (which previously used plain `<img>` — now optimized + lazy).
 
+### 2.9 Infinite-scroll gallery (`components/ItemGrid.tsx`)
+
+The gallery no longer renders the whole catalog at once — it loads in batches of **8** as the user scrolls (no pagination UI).
+
+- **First batch** — server-rendered in `app/page.tsx` (`getItems({ limit: 8, offset: 0 })`) for fast paint + SEO, then handed to the client `ItemGrid` as `initialItems`.
+- **Append on scroll** — an `IntersectionObserver` watches a 1px sentinel below the grid (`rootMargin: 600px 0px`, so it prefetches before the sentinel is visible). On intersect it fetches `GET /api/items?<filters>&limit=8&offset=<loaded>`, appends the batch, and stops when a batch returns fewer than 8. A ref guard prevents overlapping fetches.
+- **Skeleton cards** — while a batch loads, `pageSize` **`CardSkeleton`** placeholders fill the two column tails (split ⌈n/2⌉ left / ⌊n/2⌋ right). Each is a `.skeleton` `aspect-[3/4] rounded-[6px]` media box + two shimmer text lines (`h-3 w-1/3`, `h-5 w-3/4`), mirroring `ItemCard`'s footprint so there's no layout shift. Same shimmer as §2.8; disabled under `prefers-reduced-motion`.
+- **Filter/sort reset** — `app/page.tsx` mounts `ItemGrid` with `key={query}` (the filter querystring), so any filter/sort change remounts the grid and resets accumulated items + scroll state cleanly.
+- **Masonry** — the two-column staggered grid (previously inline in `app/page.tsx`) now lives in `ItemGrid`, unchanged geometry (§1.3, §2.4).
+
 ---
 
 ## 3. Responsive Breakpoints
@@ -272,6 +284,7 @@ app/globals.css        → tokens (@theme), .stage, .veil, .glass, .glass-nav, .
 components/AuroraGL.tsx → WebGL fluid mesh-gradient background (@paper-design/shaders-react); falls back to Aurora.tsx
 components/Aurora.tsx   → static CSS-blob aurora (fallback: SSR / reduced-motion / no-WebGL)
 components/Navbar.tsx   → glass pill nav
+components/ItemGrid.tsx → client masonry + infinite scroll (IntersectionObserver + skeleton cards)
 components/ItemCard.tsx → showcase card (meta + wishlist + <CardMedia>)
 components/CardMedia.tsx→ card image + 3D tilt + magnetic cursor-following pill
 components/SmoothImage.tsx → standard image primitive (next/image fill + skeleton shimmer + fade-in + lazy)

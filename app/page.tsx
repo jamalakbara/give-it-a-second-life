@@ -1,8 +1,23 @@
 import { Suspense } from "react";
-import { getItems } from "@/lib/data/items";
+import { getItemCount, getItems } from "@/lib/data/items";
 import { parseFilters } from "@/lib/filters";
-import { ItemCard } from "@/components/ItemCard";
+import type { ItemFilters } from "@/lib/types";
 import { FilterBar } from "@/components/FilterBar";
+import { ItemGrid } from "@/components/ItemGrid";
+
+const PAGE_SIZE = 8;
+
+// Filter querystring (no limit/offset) the client grid replays for each batch.
+function filtersToQuery(filters: ItemFilters): string {
+  const qs = new URLSearchParams();
+  if (filters.category?.length) qs.set("category", filters.category.join(","));
+  if (filters.condition?.length) qs.set("condition", filters.condition.join(","));
+  if (filters.minPrice !== undefined) qs.set("minPrice", String(filters.minPrice));
+  if (filters.maxPrice !== undefined) qs.set("maxPrice", String(filters.maxPrice));
+  if (filters.search) qs.set("q", filters.search);
+  if (filters.sort) qs.set("sort", filters.sort);
+  return qs.toString();
+}
 
 export default async function HomePage({
   searchParams,
@@ -11,10 +26,13 @@ export default async function HomePage({
 }) {
   const params = await searchParams;
   const filters = parseFilters(params);
-  const items = await getItems(filters);
-
-  const left = items.filter((_, i) => i % 2 === 0);
-  const right = items.filter((_, i) => i % 2 === 1);
+  // First batch is server-rendered (fast paint + SEO); the client grid appends
+  // the rest on scroll. `total` drives the search-result header.
+  const [items, total] = await Promise.all([
+    getItems({ ...filters, limit: PAGE_SIZE, offset: 0 }),
+    getItemCount(filters),
+  ]);
+  const query = filtersToQuery(filters);
 
   return (
     <div>
@@ -41,8 +59,7 @@ export default async function HomePage({
 
           {filters.search && (
             <p className="tracked mb-8 text-[11px] text-fg-muted">
-              {items.length} result{items.length === 1 ? "" : "s"} for “
-              {filters.search}”
+              {total} result{total === 1 ? "" : "s"} for “{filters.search}”
             </p>
           )}
 
@@ -54,18 +71,13 @@ export default async function HomePage({
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-x-10 md:grid-cols-2 md:gap-x-24 lg:gap-x-[160px]">
-              <div className="flex flex-col gap-20 md:gap-28 lg:gap-40">
-                {left.map((item) => (
-                  <ItemCard key={item.id} item={item} />
-                ))}
-              </div>
-              <div className="flex flex-col gap-20 md:mt-40 md:gap-28 lg:mt-[254px] lg:gap-40">
-                {right.map((item) => (
-                  <ItemCard key={item.id} item={item} />
-                ))}
-              </div>
-            </div>
+            <ItemGrid
+              key={query}
+              initialItems={items}
+              query={query}
+              pageSize={PAGE_SIZE}
+              initialHasMore={items.length === PAGE_SIZE}
+            />
           )}
         </div>
       </section>

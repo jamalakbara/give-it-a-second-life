@@ -79,12 +79,15 @@ const IMAGES_SUBQUERY = `COALESCE(
   '[]'
 ) AS images`;
 
-async function queryItems(
+// Builds the shared WHERE clause + bound params so queryItems and countItems
+// filter identically. `params` is mutated in place; the returned string is the
+// SQL condition list joined with AND.
+function buildWhere(
   filters: ItemFilters,
   includeSold: boolean,
-): Promise<Item[]> {
+  params: unknown[],
+): string {
   const conditions = includeSold ? ["TRUE"] : ["i.is_sold = false"];
-  const params: unknown[] = [];
 
   if (filters.category?.length) {
     params.push(filters.category);
@@ -109,6 +112,16 @@ async function queryItems(
     );
   }
 
+  return conditions.join(" AND ");
+}
+
+async function queryItems(
+  filters: ItemFilters,
+  includeSold: boolean,
+): Promise<Item[]> {
+  const params: unknown[] = [];
+  const where = buildWhere(filters, includeSold, params);
+
   const orderBy =
     filters.sort === "price-asc"
       ? "i.price ASC"
@@ -116,15 +129,40 @@ async function queryItems(
         ? "i.price DESC"
         : "i.sort_order ASC NULLS LAST, i.created_at DESC";
 
+  // Infinite scroll: apply LIMIT/OFFSET only when the caller paginates.
+  let pagination = "";
+  if (filters.limit !== undefined) {
+    params.push(filters.limit);
+    pagination += ` LIMIT $${params.length}`;
+  }
+  if (filters.offset !== undefined) {
+    params.push(filters.offset);
+    pagination += ` OFFSET $${params.length}`;
+  }
+
   const query = `
     SELECT i.*, ${IMAGES_SUBQUERY}
     FROM items i
-    WHERE ${conditions.join(" AND ")}
-    ORDER BY ${orderBy}
+    WHERE ${where}
+    ORDER BY ${orderBy}${pagination}
   `;
 
   const rows = (await db().query(query, params)) as ItemRow[];
   return rows.map(mapRow);
+}
+
+// Total matching count (ignores limit/offset) — used for the search-result header.
+async function countItems(
+  filters: ItemFilters,
+  includeSold: boolean,
+): Promise<number> {
+  const params: unknown[] = [];
+  const where = buildWhere(filters, includeSold, params);
+  const rows = (await db().query(
+    `SELECT COUNT(*)::int AS count FROM items i WHERE ${where}`,
+    params,
+  )) as { count: number }[];
+  return rows[0]?.count ?? 0;
 }
 
 export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
@@ -135,6 +173,11 @@ export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
 // Admin view: includes sold items so they can still be managed.
 export async function getAllItems(filters: ItemFilters = {}): Promise<Item[]> {
   return queryItems(filters, true);
+}
+
+// Total matching items (sold included, matching the public catalog).
+export async function getItemCount(filters: ItemFilters = {}): Promise<number> {
+  return countItems(filters, true);
 }
 
 export async function getItem(id: number): Promise<Item | null> {

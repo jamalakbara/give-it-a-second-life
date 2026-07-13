@@ -48,6 +48,11 @@ The platform will transition to a revenue model once multi-seller functionality 
   - 2-4 columns responsive design
   - High-resolution images with hover overlays
   - Item metadata: title, description, category, price, condition
+  - **Infinite scroll** — the gallery loads in batches of 8 as the user scrolls (no
+    pagination UI). The first batch is server-rendered; subsequent batches append on
+    the client via `/api/items?limit&offset`, with skeleton-card placeholders while a
+    batch loads. Keeps the DOM and initial query light at catalog scale (see
+    TECH_SETUP § 13)
 
 - **Search & Filtering**
   - Search by item name/keywords

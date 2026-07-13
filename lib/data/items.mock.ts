@@ -336,15 +336,28 @@ function applyFilters(base: Item[], filters: ItemFilters): Item[] {
   return result;
 }
 
+// Infinite scroll: slice the filtered set when the caller paginates.
+function paginate(result: Item[], filters: ItemFilters): Item[] {
+  if (filters.limit === undefined && filters.offset === undefined) return result;
+  const start = filters.offset ?? 0;
+  const end = filters.limit !== undefined ? start + filters.limit : undefined;
+  return result.slice(start, end);
+}
+
 export async function getItems(filters: ItemFilters = {}): Promise<Item[]> {
   // Sold items stay in the public catalog (shown with a "Sold out" tag), so the
   // public list now matches the admin list.
-  return applyFilters([...items], filters);
+  return paginate(applyFilters([...items], filters), filters);
 }
 
 // Admin view: includes sold items so they can still be managed.
 export async function getAllItems(filters: ItemFilters = {}): Promise<Item[]> {
-  return applyFilters([...items], filters);
+  return paginate(applyFilters([...items], filters), filters);
+}
+
+// Total matching items (ignores limit/offset) — used for the search-result header.
+export async function getItemCount(filters: ItemFilters = {}): Promise<number> {
+  return applyFilters([...items], filters).length;
 }
 
 export async function getItem(id: number): Promise<Item | null> {

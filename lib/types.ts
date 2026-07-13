@@ -46,6 +46,10 @@ export interface ItemFilters {
   maxPrice?: number;
   search?: string;
   sort?: SortOption;
+  // Pagination for infinite scroll. When set, the data layer applies
+  // LIMIT/OFFSET (or slice) so the gallery loads in batches on scroll.
+  limit?: number;
+  offset?: number;
 }
 
 export interface CreateItemInput {

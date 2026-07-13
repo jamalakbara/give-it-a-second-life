@@ -31,6 +31,10 @@ export function parseFilters(params: ParamSource): ItemFilters {
   const search =
     typeof params.q === "string" && params.q.trim() ? params.q.trim() : undefined;
 
+  // Infinite-scroll pagination (used by /api/items and the SSR first batch).
+  const limit = Number(params.limit);
+  const offset = Number(params.offset);
+
   return {
     category: category.length ? category : undefined,
     condition: condition.length ? condition : undefined,
@@ -38,5 +42,7 @@ export function parseFilters(params: ParamSource): ItemFilters {
     maxPrice: Number.isFinite(maxPrice) && maxPrice > 0 ? maxPrice : undefined,
     search,
     sort,
+    limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
+    offset: Number.isFinite(offset) && offset >= 0 ? offset : undefined,
   };
 }

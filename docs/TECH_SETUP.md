@@ -840,6 +840,48 @@ Create `app/api/media/route.ts`:
 
 ---
 
+## Part 13: Infinite Scroll Gallery
+
+The public gallery loads in batches as the user scrolls instead of returning the whole
+catalog in one query/DOM render.
+
+### 13.1 Data layer — `limit` / `offset`
+
+`ItemFilters` (`lib/types.ts`) gains optional `limit` and `offset`. `parseFilters`
+(`lib/filters.ts`) parses them from query params (`limit` > 0, `offset` >= 0; otherwise
+undefined), so `/api/items?...&limit=8&offset=8` works with **no change to the route**.
+
+Both adapters apply them only when present (unpaginated callers — sitemap, item detail —
+are unaffected):
+
+- **Neon** (`lib/data/items.neon.ts`): a shared `buildWhere()` produces the WHERE clause +
+  bound params; `queryItems` appends `LIMIT $n OFFSET $n`, and `countItems` runs
+  `SELECT COUNT(*)` over the same clause. Exposed as `getItemCount(filters)`.
+- **Mock** (`lib/data/items.mock.ts`): `paginate()` slices the filtered result; matching
+  `getItemCount`.
+- `lib/data/items.ts` re-exports `getItemCount` from the active adapter.
+
+### 13.2 Request / response
+
+`GET /api/items?category&condition&minPrice&maxPrice&q&sort&limit&offset` → JSON array of
+at most `limit` items starting at `offset`, using the same filter/sort as before. An
+`offset` past the end returns `[]`.
+
+### 13.3 Rendering flow
+
+- `app/page.tsx` (Server Component) fetches the **first batch** (`limit: 8, offset: 0`) and
+  the total via `getItemCount` (drives the search-result header), then mounts
+  `<ItemGrid key={query} initialItems query pageSize={8} initialHasMore={items.length === 8} />`.
+  `key={query}` remounts the grid on any filter/sort change, resetting scroll state.
+- `components/ItemGrid.tsx` (Client Component) seeds from `initialItems`, renders the
+  two-column masonry, and observes a bottom sentinel with `IntersectionObserver`
+  (`rootMargin: 600px`). On intersect it fetches the next batch at
+  `offset = items.length`, appends, and sets `hasMore = batch.length === pageSize`.
+  A ref guard prevents overlapping fetches; on fetch error it stops loading more.
+  Skeleton cards (`.skeleton` shimmer) fill the column tails while a batch loads.
+
+---
+
 ## Quick Start Checklist (MVP)
 
 - [ ] Create Neon account & database
