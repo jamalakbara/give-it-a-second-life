@@ -9,6 +9,7 @@ import { StarIcon, SearchIcon, MenuIcon, CloseIcon } from "@/components/icons";
 const NAV_LINKS = [
   { href: "/", label: "Gallery" },
   { href: "/wishlist", label: "Wishlist" },
+  { href: "/about", label: "About" },
   { href: "/admin", label: "Sell" },
 ];
 

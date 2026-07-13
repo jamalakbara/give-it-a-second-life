@@ -882,6 +882,49 @@ at most `limit` items starting at `offset`, using the same filter/sort as before
 
 ---
 
+## Part 14: About Page & SEO
+
+A static `/about` page that states the site's purpose and the seller's story, plus the
+SEO wiring that supports it.
+
+### 14.1 Route
+
+`app/about/page.tsx` — a **Server Component** with no data fetch. Sections: hero, mission,
+how-it-works (three `.glass` cards), seller intro (Akbar), CTA back to the gallery. Reuses
+existing tokens only (`text-hero`/`text-h2`/`text-h3`, `.tracked`, `.glass`, `.veil`, `.rise`),
+so no new design primitives. Aurora background is inherited from the root layout.
+
+### 14.2 Metadata
+
+`export const metadata: Metadata` provides:
+
+- `title: "About"` → renders **"About | Selling Preloved Items"** via the root
+  `title.template` (`app/layout.tsx`)
+- `description` — the mission one-liner (shared with the JSON-LD via a `MISSION` constant)
+- `alternates.canonical: "/about"`
+- `openGraph` — `title`, `description`, `url: "/about"`, `type: "website"`
+
+**Root layout fix:** `app/layout.tsx` `metadata` now sets
+`metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000")`
+(same env var as `app/sitemap.ts`). Without it, relative Open Graph / canonical URLs do
+not resolve to absolute URLs. This benefits **every** page, not just `/about`.
+
+### 14.3 Structured data
+
+Inline `<script type="application/ld+json">` (same pattern as the item page's `Product`
+schema) with a `@graph` of two nodes:
+
+- `AboutPage` — `name`, `description` (mission), `url`
+- `Organization` — `name`, `description`, `url`, `founder` (Person "Akbar")
+
+### 14.4 Discovery
+
+- `app/sitemap.ts` — adds `{ url: `${BASE_URL}/about`, changeFrequency: "monthly", priority: 0.6 }`.
+- `components/Navbar.tsx` (`NAV_LINKS`) and `components/Footer.tsx` — add an **About** link
+  (renders in desktop nav, mobile menu, and footer).
+
+---
+
 ## Quick Start Checklist (MVP)
 
 - [ ] Create Neon account & database

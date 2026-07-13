@@ -18,12 +18,15 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  ),
   title: {
     default: "Selling Preloved Items — A living gallery of preloved treasures",
     template: "%s | Selling Preloved Items",
   },
   description:
-    "Discover preloved treasures. Extend the lifecycle of beautiful things. A curated gallery of preloved fashion, accessories, home décor, and books.",
+    "Discover preloved treasures. Extend the lifecycle of well-made things. A curated gallery of preloved pieces — clothing, tech, homeware, and more.",
 };
 
 export default function RootLayout({

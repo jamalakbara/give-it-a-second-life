@@ -3,6 +3,8 @@ export const CATEGORIES = [
   "accessories",
   "home",
   "books",
+  "electronics",
+  "vehicles",
   "other",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -81,6 +83,8 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   accessories: "Accessories",
   home: "Home & Décor",
   books: "Books",
+  electronics: "Electronics",
+  vehicles: "Vehicles",
   other: "Other",
 };
 

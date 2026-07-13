@@ -298,9 +298,14 @@ components/MediaPicker.tsx → modal picker: Gallery (reuse Cloudinary uploads) 
 components/SortableImageGrid.tsx → drag-to-reorder image thumbnails (@dnd-kit, cover badge)
 components/AdminItemList.tsx → admin item list (drag-reorder rows, sold badge, edit + inline delete confirm)
 app/page.tsx           → hero + staggered gallery
+app/about/page.tsx     → static About page (hero + mission + 3 glass how-it-works cards + seller intro + CTA); reuses existing tokens only
 app/admin/page.tsx     → password gate + create form + AdminItemList
 app/items/[id]/page.tsx→ detail
 ```
+
+The About page introduces no new tokens or components — it composes existing ones
+(`text-hero`/`text-h2`/`text-h3`, `.tracked` eyebrows, `.glass rounded-3xl` cards on a
+`.veil` section, `.rise` hero entrance, cream CTA pill matching item-detail).
 
 ---
 

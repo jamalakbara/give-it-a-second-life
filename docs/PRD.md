@@ -11,7 +11,7 @@
 
 A curated, visually-stunning marketplace for buying and selling preloved items. The MVP launches as a single-seller gallery showcasing Akbar's preloved collection with a foundation built for future multi-seller expansion. Design inspiration: Jack Watkins' portfolio site (jackwatkins.co/works) — clean grid layouts, minimal aesthetic, high-impact imagery.
 
-**Target Market:** Sustainability-conscious consumers, fashion enthusiasts, bargain hunters  
+**Target Market:** Sustainability-conscious consumers, collectors & enthusiasts across categories (fashion, tech, homeware, and more), bargain hunters  
 **MVP Timeline:** Single-seller phase  
 **Future Vision:** Multi-seller marketplace with commission-based revenue
 
@@ -109,6 +109,18 @@ The platform will transition to a revenue model once multi-seller functionality 
 - "Get notified when new items drop"
 - No algorithm-driven emails; curated notifications only
 
+#### 3.4 About Page (MVP)
+A static `/about` page that states the product's purpose and the seller's story, so
+visitors landing from search or an item link understand *why* the gallery exists.
+- **Mission** — "extend the lifecycle of beautiful things"; curated, gallery-first,
+  one-of-a-kind (speaks to all three audience segments: sustainability, value, discovery)
+- **How it works** — browse the gallery → message the seller on WhatsApp → give it a
+  second life
+- **Seller intro** — short first-person bio from Akbar, the curator
+- **SEO** — page metadata (title via root template, description, canonical), Open Graph,
+  and `AboutPage` + `Organization` JSON-LD; registered in the sitemap
+- Linked from both the Navbar and the Footer
+
 ### Phase 2 Features (Future Scope)
 - Multi-seller onboarding & authentication
 - Seller ratings & reviews
@@ -138,7 +150,7 @@ The platform will transition to a revenue model once multi-seller functionality 
 - id (PK)
 - title (string)
 - description (text)
-- category (enum: clothing, accessories, home, books, other)
+- category (enum: clothing, accessories, home, books, electronics, vehicles, other)
 - condition (enum: new, like-new, good, fair)
 - price (decimal)
 - images (array of image URLs)
@@ -330,7 +342,7 @@ The platform will transition to a revenue model once multi-seller functionality 
 
 ### Initial Item Catalog
 - **Launch with:** 15-30 high-quality items from Akbar's collection
-- **Categories:** Fashion (primary), accessories, home décor, books
+- **Categories:** Any preloved item — clothing, accessories, home & décor, books, electronics, vehicles, and more (`other` catch-all). Not fashion-only.
 - **Pricing:** Market-aligned for condition & brand
 - **Photos:** Professional, consistent lighting & styling
 
@@ -344,7 +356,9 @@ The platform will transition to a revenue model once multi-seller functionality 
 - Meta titles: "[Brand] [Item] | Preloved [Category] – Selling Preloved Items"
 - Meta descriptions: Include condition, size, price, brand
 - Alt text for all images
-- Structured data: Product schema markup
+- Structured data: `Product` schema on item pages; `AboutPage` + `Organization` on `/about`
+- `metadataBase` set on the root layout so Open Graph / canonical URLs resolve absolutely
+- Sitemap includes home, `/about`, `/wishlist`, and every item page
 
 ---
 

@@ -14,6 +14,7 @@ export function Footer() {
             {[
               { href: "/", label: "Gallery" },
               { href: "/wishlist", label: "Wishlist" },
+              { href: "/about", label: "About" },
               { href: "/admin", label: "Sell" },
             ].map((l) => (
               <Link
