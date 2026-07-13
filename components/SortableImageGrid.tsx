@@ -17,6 +17,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { SmoothImage } from "@/components/SmoothImage";
 
 // Drag-to-reorder thumbnail grid used by the admin item form. The first tile is
 // the catalog cover. Order of `urls` is authoritative — the parent submits it
@@ -104,13 +105,13 @@ function SortableThumb({
       <div
         {...attributes}
         {...listeners}
-        className="h-full w-full cursor-grab touch-none active:cursor-grabbing"
+        className="relative h-full w-full cursor-grab touch-none active:cursor-grabbing"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        <SmoothImage
           src={url}
           alt={`Upload ${index + 1}`}
-          className="pointer-events-none h-full w-full object-cover"
+          sizes="(max-width: 640px) 33vw, 160px"
+          className="pointer-events-none"
           draggable={false}
         />
       </div>

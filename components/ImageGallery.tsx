@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import type { ItemImage } from "@/lib/types";
+import { SmoothImage } from "@/components/SmoothImage";
 
 function ChevronIcon({ dir }: { dir: "left" | "right" }) {
   return (
@@ -47,7 +47,6 @@ const arrowClasses =
 
 export function ImageGallery({ images }: { images: ItemImage[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [loaded, setLoaded] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const total = images.length;
@@ -55,17 +54,14 @@ export function ImageGallery({ images }: { images: ItemImage[] }) {
   const hasMultiple = total > 1;
 
   const goTo = useCallback((index: number) => {
-    setLoaded(false);
     setActiveIndex(index);
   }, []);
 
   const goPrev = useCallback(() => {
-    setLoaded(false);
     setActiveIndex((i) => (i - 1 + total) % total);
   }, [total]);
 
   const goNext = useCallback(() => {
-    setLoaded(false);
     setActiveIndex((i) => (i + 1) % total);
   }, [total]);
 
@@ -94,26 +90,18 @@ export function ImageGallery({ images }: { images: ItemImage[] }) {
   return (
     <div>
       <div className="group relative aspect-[3/4] w-full overflow-hidden rounded-[10px] bg-glass ring-1 ring-hairline">
-        {!loaded && (
-          <div className="skeleton absolute inset-0 z-10" aria-hidden="true" />
-        )}
         <button
           type="button"
           onClick={() => setLightboxOpen(true)}
           aria-label="Open full-screen preview"
           className="absolute inset-0 z-20 cursor-zoom-in"
         >
-          <Image
+          <SmoothImage
             key={active.url}
             src={active.url}
             alt={active.alt}
-            fill
             priority
             sizes="(max-width: 767px) 100vw, 55vw"
-            onLoad={() => setLoaded(true)}
-            className={`object-cover transition-opacity duration-500 ${
-              loaded ? "opacity-100" : "opacity-0"
-            }`}
           />
         </button>
         {hasMultiple && (
@@ -151,12 +139,10 @@ export function ImageGallery({ images }: { images: ItemImage[] }) {
                   : "ring-hairline hover:ring-fg-muted"
               }`}
             >
-              <Image
+              <SmoothImage
                 src={image.url}
                 alt={image.alt}
-                fill
                 sizes="76px"
-                className="object-cover"
               />
             </button>
           ))}
@@ -184,23 +170,13 @@ export function ImageGallery({ images }: { images: ItemImage[] }) {
             className="relative flex flex-1 items-center justify-center px-4 py-16 md:px-20"
             onClick={(event) => event.stopPropagation()}
           >
-            {!loaded && (
-              <div
-                className="skeleton absolute inset-8 rounded-[10px] md:inset-24"
-                aria-hidden="true"
-              />
-            )}
             <div className="relative h-full w-full max-w-[1100px]">
-              <Image
+              <SmoothImage
                 key={active.url}
                 src={active.url}
                 alt={active.alt}
-                fill
                 sizes="90vw"
-                onLoad={() => setLoaded(true)}
-                className={`object-contain transition-opacity duration-500 ${
-                  loaded ? "opacity-100" : "opacity-0"
-                }`}
+                objectFit="contain"
               />
             </div>
 
@@ -243,12 +219,10 @@ export function ImageGallery({ images }: { images: ItemImage[] }) {
                       : "ring-hairline hover:ring-fg-muted"
                   }`}
                 >
-                  <Image
+                  <SmoothImage
                     src={image.url}
                     alt={image.alt}
-                    fill
                     sizes="64px"
-                    className="object-cover"
                   />
                 </button>
               ))}

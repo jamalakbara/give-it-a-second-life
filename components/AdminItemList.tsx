@@ -23,6 +23,7 @@ import { CATEGORY_LABELS, CONDITION_LABELS, type Item } from "@/lib/types";
 import { formatPrice } from "@/lib/format";
 import { Button } from "@/components/Button";
 import { ItemForm } from "@/components/ItemForm";
+import { SmoothImage } from "@/components/SmoothImage";
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
 
@@ -181,13 +182,12 @@ export function AdminItemList({ refreshToken = 0 }: { refreshToken?: number }) {
                   dragDisabled={isEditing}
                 >
                   <div className="flex items-center gap-4">
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-glass">
+                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-glass">
                   {cover && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <SmoothImage
                       src={cover.url}
                       alt={cover.alt}
-                      className="h-full w-full object-cover"
+                      sizes="64px"
                     />
                   )}
                 </div>

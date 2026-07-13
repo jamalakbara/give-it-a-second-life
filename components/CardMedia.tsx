@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { ItemImage } from "@/lib/types";
+import { SmoothImage } from "@/components/SmoothImage";
 import { WishlistButton } from "@/components/WishlistButton";
 
 // Matches jackwatkins.co/works card hover:
@@ -117,12 +117,11 @@ export function CardMedia({
         }}
       >
         {cover && (
-          <Image
+          <SmoothImage
             src={cover.url}
             alt={cover.alt}
-            fill
             sizes="(max-width: 767px) 100vw, 480px"
-            className={`object-cover ${isSold ? "grayscale-[0.4]" : ""}`}
+            className={isSold ? "grayscale-[0.4]" : ""}
           />
         )}
 

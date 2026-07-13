@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/Button";
+import { SmoothImage } from "@/components/SmoothImage";
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD ?? "";
 
@@ -253,11 +254,10 @@ export function MediaPicker({
                             : "ring-hairline hover:ring-fg-muted"
                         } ${added ? "cursor-not-allowed opacity-40" : "cursor-pointer"}`}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <SmoothImage
                           src={img.url}
                           alt=""
-                          className="h-full w-full object-cover"
+                          sizes="(max-width: 640px) 33vw, 160px"
                           draggable={false}
                         />
                         {(isSelected || added) && (

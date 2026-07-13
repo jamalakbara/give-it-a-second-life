@@ -2,7 +2,9 @@
 
 **Design Reference:** jackwatkins.co/works (live, inspected July 2026)
 **Aesthetic:** Dark "living gallery" — near-black stage, drifting aurora glow, high-contrast serif display, glassmorphic UI, large staggered imagery
-**Status:** MVP Design System — v2.11 (wishlist icon changed from heart → 5-point star, `StarIcon` in `components/icons.tsx`)
+**Status:** MVP Design System — v2.12 (all content images unified under one `SmoothImage` primitive — skeleton shimmer + fade-in + native lazy-load)
+
+> **Note (v2.12):** Every content image now renders through a single reusable primitive, **`SmoothImage`** (`components/SmoothImage.tsx`) — `next/image` in `fill` mode with the shared `.skeleton` shimmer shown while decoding, cross-fading in on load, and native `loading="lazy"` on all non-`priority` images. It replaced the hand-rolled skeleton logic in `ImageGallery` and the bare `next/image` in `CardMedia`, and the plain `<img>` tags in the admin surfaces (`MediaPicker`, `SortableImageGrid`, `AdminItemList`) — so admin thumbnails are now optimized + lazy too. See §2.8.
 
 > **Note (v2.11):** The wishlist control icon changed from a **heart to a 5-point star** (`StarIcon`, `components/icons.tsx`) — a "favorite"/collect metaphor. Same `filled`-on-active behavior, same `--color-accent` color, same glass circle + count badge; only the glyph changed. Text below that says "heart" refers to this same star control.
 
@@ -213,8 +215,18 @@ shadow. The grip is disabled while that row's edit form is open.
 
 ### 2.7.1 Image showcase — carousel + lightbox + skeleton (`components/ImageGallery.tsx`)
 - **Carousel arrows** — prev/next buttons overlaid on the main `aspect-[3/4]` frame (only when >1 image), vertically centered at `left-3` / `right-3`. Button style = `.glass grid size-10 place-items-center rounded-full text-fg backdrop-blur transition hover:text-cream hover:ring-1 hover:ring-cream` with an inline chevron SVG (no icon dep). Navigation wraps modulo image count. The thumbnail strip (`size-[76px]`, active `ring-2 ring-cream`) stays below and stays in sync.
-- **Loading skeleton** — a `.skeleton` overlay (shimmer gradient of `--color-glass`→`--color-glass-strong`, `shimmer` keyframe, 1.4s) covers the frame while the active image decodes; the `next/image` fades in (`opacity-0`→`opacity-100`, `duration-500`) on `onLoad`. `loaded` resets to `false` on every image change so switching photos always shows the shimmer, never a blank/stale pop. Image is keyed by `url` to force a fresh `onLoad`. Disabled under `prefers-reduced-motion`.
-- **Lightbox** — clicking the main image (`cursor-zoom-in`) opens a fixed full-screen overlay (`z-[60]`, backdrop `bg-void/80 backdrop-blur-xl`). Contained large image uses `object-contain`, same skeleton-on-load pattern. Themed prev/next arrows + a top-right glass close button (X SVG), plus a `size-[64px]` thumbnail row along the bottom. Closes on Esc, click-outside, or X; `←`/`→` navigate; body scroll locks while open.
+- **Loading skeleton** — main image, thumbnails, and lightbox all render through **`SmoothImage`** (§2.8), so the shimmer + fade-in comes for free. The main and lightbox images are keyed by `url` so switching photos remounts and re-shows the shimmer, never a blank/stale pop. Disabled under `prefers-reduced-motion`.
+- **Lightbox** — clicking the main image (`cursor-zoom-in`) opens a fixed full-screen overlay (`z-[60]`, backdrop `bg-void/80 backdrop-blur-xl`). Contained large image passes `objectFit="contain"` to `SmoothImage`. Themed prev/next arrows + a top-right glass close button (X SVG), plus a `size-[64px]` thumbnail row along the bottom. Closes on Esc, click-outside, or X; `←`/`→` navigate; body scroll locks while open.
+
+### 2.8 Image primitive — `SmoothImage` (`components/SmoothImage.tsx`)
+
+The single standard for **every content image** on the site. Wraps `next/image` in `fill` mode and bakes in the loading treatment so no call site re-implements it:
+
+- **Skeleton** — while the image decodes, a `.skeleton` sibling (`absolute inset-0`, the shimmer gradient `--color-glass`→`--color-glass-strong`, `shimmer` keyframe 1.4s) fills the frame. DOM order (skeleton first, `<Image>` second) means the loaded, opaque image paints on top — no z-index needed. Disabled under `prefers-reduced-motion`.
+- **Fade-in** — the image is `opacity-0` until its `onLoad`, then transitions to `opacity-100` over `duration-500`.
+- **Lazy-load** — non-`priority` images keep `next/image`'s native `loading="lazy"`, so below-the-fold images only fetch on approach. Only the item-detail main gallery image passes `priority` (above the fold).
+- **API** — `src, alt, sizes, className, priority?, draggable?, objectFit?` (`"cover"` default, `"contain"` for the lightbox). The **caller owns** the positioned/rounded/ring container (all call sites already provide a `relative` box).
+- **Call sites** — `CardMedia` (catalog cards), `ImageGallery` (main + thumbnails + lightbox), and the admin surfaces `MediaPicker` / `SortableImageGrid` / `AdminItemList` (which previously used plain `<img>` — now optimized + lazy).
 
 ---
 
@@ -262,6 +274,7 @@ components/Aurora.tsx   → static CSS-blob aurora (fallback: SSR / reduced-moti
 components/Navbar.tsx   → glass pill nav
 components/ItemCard.tsx → showcase card (meta + wishlist + <CardMedia>)
 components/CardMedia.tsx→ card image + 3D tilt + magnetic cursor-following pill
+components/SmoothImage.tsx → standard image primitive (next/image fill + skeleton shimmer + fade-in + lazy)
 components/FilterBar.tsx→ glass filter toolbar
 components/Button.tsx   → cream / glass pill variants
 components/form.tsx     → glass inputs
