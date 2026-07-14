@@ -93,21 +93,26 @@ export function FilterBar() {
           Condition {selectedConditions.length ? `(${selectedConditions.length})` : ""}
         </button>
 
-        <select
-          value={sort}
-          onChange={(e) =>
-            update((params) => {
-              if (e.target.value === "newest") params.delete("sort");
-              else params.set("sort", e.target.value);
-            })
-          }
-          aria-label="Sort"
-          className="glass tracked ml-auto cursor-pointer rounded-full px-3.5 py-1.5 text-[10px] text-fg-muted outline-none"
-        >
-          <option value="newest" className="bg-ink text-fg">Newest</option>
-          <option value="price-asc" className="bg-ink text-fg">Price ↑</option>
-          <option value="price-desc" className="bg-ink text-fg">Price ↓</option>
-        </select>
+        <div className="glass ml-auto flex cursor-pointer items-center rounded-full py-1.5 pl-3.5 pr-3">
+          <select
+            value={sort}
+            onChange={(e) =>
+              update((params) => {
+                if (e.target.value === "newest") params.delete("sort");
+                else params.set("sort", e.target.value);
+              })
+            }
+            aria-label="Sort"
+            className="tracked cursor-pointer appearance-none bg-transparent text-[10px] text-fg-muted outline-none"
+          >
+            <option value="newest" className="bg-ink text-fg">Newest</option>
+            <option value="price-asc" className="bg-ink text-fg">Price ↑</option>
+            <option value="price-desc" className="bg-ink text-fg">Price ↓</option>
+          </select>
+          <svg className="ml-2 size-3 shrink-0 text-fg-muted" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M2 4l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
 
         {hasFilters && (
           <Link
