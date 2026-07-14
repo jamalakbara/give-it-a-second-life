@@ -10,7 +10,7 @@ export function Footer() {
           <p className="font-logo text-[20px] font-medium text-fg">
             Give It a Second Life&deg;
           </p>
-          <nav className="flex gap-7" aria-label="Footer">
+          <nav className="flex gap-4 sm:gap-7" aria-label="Footer">
             {[
               { href: "/", label: "Home" },
               { href: "/gallery", label: "Gallery" },

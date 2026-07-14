@@ -7,6 +7,7 @@ import { canonical } from "@/lib/seo";
 import { getContent } from "@/lib/data/siteContent";
 import { FilterBar } from "@/components/FilterBar";
 import { ItemGrid } from "@/components/ItemGrid";
+import { ScrollIndicator } from "@/components/ScrollIndicator";
 
 const PAGE_SIZE = 8;
 
@@ -71,13 +72,14 @@ export default async function GalleryPage({
       />
 
       {/* Hero — single serif line under a tiny eyebrow (full aurora shows through) */}
-      <section className="flex min-h-[68vh] flex-col items-center justify-center px-6 text-center">
+      <section className="relative flex min-h-[68vh] flex-col items-center justify-center px-6 text-center">
         <p className="tracked animate-rise text-[11px] text-fg-muted">
           Every piece, a second life
         </p>
         <h1 className="mt-6 max-w-5xl font-serif text-hero font-medium text-fg animate-rise">
           The collection.
         </h1>
+        <ScrollIndicator />
       </section>
 
       {/* Gallery — darkened stage */}

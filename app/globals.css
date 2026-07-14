@@ -44,6 +44,7 @@
   --animate-drift-b: drift-b 32s ease-in-out infinite;
   --animate-drift-c: drift-c 22s ease-in-out infinite;
   --animate-rise: rise 0.9s var(--ease-out-soft) both;
+  --animate-scroll-bob: scroll-bob 2s ease-in-out infinite;
 }
 
 @keyframes drift-a {
@@ -65,6 +66,10 @@
 @keyframes shimmer {
   0% { background-position: -150% 0; }
   100% { background-position: 150% 0; }
+}
+@keyframes scroll-bob {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(6px); opacity: 1; }
 }
 
 html {

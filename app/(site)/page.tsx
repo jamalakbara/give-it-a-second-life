@@ -4,6 +4,7 @@ import { getItems } from "@/lib/data/items";
 import { getContent } from "@/lib/data/siteContent";
 import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { ArrivalsCarousel } from "@/components/ArrivalsCarousel";
+import { ScrollIndicator } from "@/components/ScrollIndicator";
 
 const PREVIEW_COUNT = 6;
 
@@ -42,7 +43,7 @@ export default async function HomePage() {
       />
 
       {/* Hero — minimal, full aurora shows through */}
-      <section className="flex min-h-[78vh] flex-col items-center justify-center px-6 text-center">
+      <section className="relative flex min-h-[78vh] flex-col items-center justify-center px-6 text-center">
         <p className="tracked animate-rise text-[11px] text-fg-muted">
           {home.heroEyebrow}
         </p>
@@ -58,6 +59,7 @@ export default async function HomePage() {
         >
           {home.heroCta}
         </Link>
+        <ScrollIndicator />
       </section>
 
       {/* Preview strip — a taste of the catalog, then send them in */}

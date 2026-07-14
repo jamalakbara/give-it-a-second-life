@@ -40,7 +40,7 @@ export function NewsletterForm() {
       </p>
       <form
         onSubmit={handleSubmit}
-        className="glass mx-auto mt-8 flex max-w-md items-center gap-2 rounded-full p-1.5"
+        className="glass mx-auto mt-8 flex max-w-md flex-col gap-2 rounded-3xl p-2 sm:flex-row sm:items-center sm:rounded-full sm:p-1.5"
       >
         <input
           type="email"
@@ -49,12 +49,12 @@ export function NewsletterForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
           aria-label="Email address"
-          className="flex-1 bg-transparent px-4 py-2 text-[14px] text-fg placeholder:text-fg-faint outline-none"
+          className="flex-1 bg-transparent px-4 py-2.5 text-center text-[14px] text-fg placeholder:text-fg-faint outline-none sm:text-left"
         />
         <button
           type="submit"
           disabled={status === "loading"}
-          className="tracked shrink-0 cursor-pointer rounded-full bg-cream px-5 py-2.5 text-[11px] text-void transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          className="tracked w-full cursor-pointer rounded-full bg-cream px-5 py-2.5 text-center text-[11px] text-void transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
         >
           {status === "loading" ? "…" : "Subscribe"}
         </button>

@@ -71,8 +71,9 @@ export function FilterBar() {
   }
 
   return (
-    <div className="mb-10 flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="mb-10 flex flex-col gap-3">
+      {/* Category chips */}
+      <div className="flex flex-wrap gap-2">
         {CATEGORIES.map((category) => (
           <Chip
             key={category}
@@ -82,9 +83,10 @@ export function FilterBar() {
             {CATEGORY_LABELS[category]}
           </Chip>
         ))}
+      </div>
 
-        <span className="mx-1 hidden h-4 w-px bg-hairline sm:block" />
-
+      {/* Controls row: condition left, sort right */}
+      <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setShowConditions((v) => !v)}
@@ -92,6 +94,15 @@ export function FilterBar() {
         >
           Condition {selectedConditions.length ? `(${selectedConditions.length})` : ""}
         </button>
+
+        {hasFilters && (
+          <Link
+            href={pathname}
+            className="tracked text-[10px] text-fg-faint underline-offset-4 transition-colors hover:text-fg hover:underline"
+          >
+            Clear
+          </Link>
+        )}
 
         <div className="glass ml-auto flex cursor-pointer items-center rounded-full py-1.5 pl-3.5 pr-3">
           <select
@@ -113,15 +124,6 @@ export function FilterBar() {
             <path d="M2 4l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
-
-        {hasFilters && (
-          <Link
-            href={pathname}
-            className="tracked text-[10px] text-fg-faint underline-offset-4 transition-colors hover:text-fg hover:underline"
-          >
-            Clear
-          </Link>
-        )}
       </div>
 
       {showConditions && (
